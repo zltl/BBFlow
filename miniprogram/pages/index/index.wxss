@@ -1,0 +1,25 @@
+.page {
+  padding: 32rpx;
+}
+
+.hero {
+  background: linear-gradient(135deg, #ff9aa2, #ff6b6b);
+  color: #fff;
+}
+
+.hero .title {
+  font-size: 40rpx;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.hero .subtitle {
+  font-size: 28rpx;
+  opacity: 0.9;
+}
+
+.feature {
+  color: #666;
+  font-size: 28rpx;
+  line-height: 1.8;
+}

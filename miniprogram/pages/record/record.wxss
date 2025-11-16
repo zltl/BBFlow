@@ -1,0 +1,9 @@
+.page {
+  padding: 32rpx;
+}
+
+.placeholder {
+  font-size: 28rpx;
+  color: #888;
+  line-height: 1.6;
+}

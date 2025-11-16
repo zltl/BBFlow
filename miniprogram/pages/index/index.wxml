@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="card hero">
+    <view class="title">守护家人的血压记录</view>
+    <view class="subtitle">快速记录 · 趋势图表 · 一键分享</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">立即开始</view>
+    <button class="btn btn-primary" bindtap="handleRecord">记录血压</button>
+    <button class="btn btn-secondary" bindtap="handleHistory">查看历史</button>
+  </view>
+
+  <view class="card">
+    <view class="section-title">规划中的能力</view>
+    <view class="feature">· 拍照自动识别血压计读数</view>
+    <view class="feature">· 周/月血压趋势图</view>
+    <view class="feature">· 分享报告给家人/医生</view>
+  </view>
+</view>

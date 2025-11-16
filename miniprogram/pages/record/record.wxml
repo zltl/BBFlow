@@ -1,0 +1,11 @@
+<view class="page">
+  <view class="card">
+    <view class="section-title">手动录入（开发中）</view>
+    <view class="placeholder">在这里将提供高压/低压/心率/标签等输入表单。</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">拍照识别（规划中）</view>
+    <view class="placeholder">将接入相机与OCR接口，自动识别血压计读数。</view>
+  </view>
+</view>
