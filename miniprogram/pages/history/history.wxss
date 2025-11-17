@@ -1,9 +1,147 @@
 .page {
   padding: 32rpx;
+  padding-bottom: 64rpx;
 }
 
-.placeholder {
+.filter-bar {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 32rpx;
+}
+
+.filter-label {
   font-size: 28rpx;
-  color: #888;
-  line-height: 1.6;
+  color: #666;
+  margin-right: 16rpx;
+}
+
+.filter-date {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  padding: 12rpx 24rpx;
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
+}
+
+.clear-filter {
+  margin-left: 16rpx;
+  font-size: 26rpx;
+  color: #ff6b6b;
+  padding: 8rpx 16rpx;
+}
+
+.empty {
+  text-align: center;
+  padding: 80rpx 32rpx;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+  font-weight: 500;
+}
+
+.empty-hint {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.record-item {
+  margin-bottom: 24rpx;
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.record-time {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.record-source {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.record-data {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 24rpx;
+}
+
+.data-item {
+  text-align: center;
+}
+
+.data-label {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 8rpx;
+}
+
+.data-value {
+  font-size: 28rpx;
+}
+
+.value-num {
+  font-size: 40rpx;
+  font-weight: 600;
+}
+.value-num.normal { color: #52c41a; }
+.value-num.warning { color: #faad14; }
+.value-num.danger { color: #ff4d4f; }
+
+.value-unit {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 4rpx;
+}
+
+.record-tags {
+  margin-bottom: 16rpx;
+}
+
+.mini-tag {
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  background-color: #f5f5f5;
+  color: #666;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.record-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.action-btn {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  background-color: #f5f5f5;
+  color: #666;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+}
+
+.action-btn.delete {
+  background-color: #fff5f5;
+  color: #ff6b6b;
 }

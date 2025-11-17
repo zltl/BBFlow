@@ -1,6 +1,59 @@
 <view class="page">
-  <view class="card">
-    <view class="section-title">历史记录（待接入数据）</view>
-    <view class="placeholder">完成数据模型后，这里将展示血压记录列表及筛选功能。</view>
+  <view class="card filter-bar">
+    <view class="filter-label">筛选日期：</view>
+    <picker mode="date" value="{{filterDate}}" bindchange="onDateChange">
+      <view class="filter-date">
+        {{filterDate || '全部日期'}}
+      </view>
+    </picker>
+    <view wx:if="{{filterDate}}" class="clear-filter" bindtap="clearFilter">清除</view>
+  </view>
+
+  <view wx:if="{{records.length === 0}}" class="card empty">
+    <view class="empty-icon">📊</view>
+    <view class="empty-text">暂无记录</view>
+    <view class="empty-hint">点击首页"记录血压"开始添加数据</view>
+  </view>
+
+  <view wx:else>
+    <view wx:for="{{records}}" wx:key="index" class="card record-item">
+      <view class="record-header">
+        <view class="record-time">{{item.measuredAt}}</view>
+        <view class="record-source">{{item.source === 'manual' ? '手动录入' : '自动识别'}}</view>
+      </view>
+
+      <view class="record-data">
+        <view class="data-item">
+          <view class="data-label">收缩压</view>
+          <view class="data-value">
+            <text class="value-num {{item.bpStatus}}">{{item.systolic}}</text>
+            <text class="value-unit">mmHg</text>
+          </view>
+        </view>
+        <view class="data-item">
+          <view class="data-label">舒张压</view>
+          <view class="data-value">
+            <text class="value-num {{item.bpStatus}}">{{item.diastolic}}</text>
+            <text class="value-unit">mmHg</text>
+          </view>
+        </view>
+        <view class="data-item">
+          <view class="data-label">心率</view>
+          <view class="data-value">
+            <text class="value-num">{{item.heartRate}}</text>
+            <text class="value-unit">次/分</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{item.tags && item.tags.length > 0}}" class="record-tags">
+        <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this" class="mini-tag">{{tag}}</text>
+      </view>
+
+      <view class="record-actions">
+        <view class="action-btn" data-index="{{index}}" bindtap="viewDetail">查看详情</view>
+        <view class="action-btn delete" data-index="{{index}}" bindtap="deleteRecord">删除</view>
+      </view>
+    </view>
   </view>
 </view>
