@@ -9,6 +9,7 @@ Page({
   onLoad() {
     this.checkFirstLaunch();
     this.loadUserInfo();
+    this.autoLogin();
   },
 
   // 检查是否首次启动
@@ -40,24 +41,36 @@ Page({
   },
 
   // 微信登录
-  async handleLogin() {
-    try {
-      await app.login();
-      await app.getUserInfo();
-      
-      wx.showToast({
-        title: '登录成功',
-        icon: 'success'
-      });
-      
-      this.loadUserInfo();
-    } catch (error) {
-      console.error('登录失败:', error);
-      wx.showToast({
-        title: '登录失败',
-        icon: 'none'
-      });
-    }
+  handleLogin() {
+    // getUserProfile必须在点击事件中直接调用，不能在异步回调中
+    wx.getUserProfile({
+      desc: '用于完善用户资料',
+      success: (res) => {
+        // 保存用户信息
+        const userInfo = res.userInfo;
+        wx.setStorageSync('userInfo', userInfo);
+        wx.setStorageSync('hasAuth', true);
+        
+        this.setData({
+          userInfo
+        });
+        
+        wx.showToast({
+          title: '登录成功',
+          icon: 'success'
+        });
+        
+        // 然后执行wx.login获取code
+        app.login();
+      },
+      fail: (error) => {
+        console.error('登录失败:', error);
+        wx.showToast({
+          title: '登录失败',
+          icon: 'none'
+        });
+      }
+    });
   },
 
   handleRecord() {

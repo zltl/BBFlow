@@ -36,18 +36,13 @@ App({
     });
   },
 
-  // 获取用户信息
+  // 获取用户信息（注意：getUserProfile必须在页面点击事件中直接调用）
   getUserInfo() {
-    return new Promise((resolve, reject) => {
-      wx.getUserProfile({
-        desc: '用于完善用户资料',
-        success: (res) => {
-          this.globalData.userInfo = res.userInfo;
-          wx.setStorageSync('userInfo', res.userInfo);
-          resolve(res.userInfo);
-        },
-        fail: reject
-      });
-    });
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo) {
+      this.globalData.userInfo = userInfo;
+      return Promise.resolve(userInfo);
+    }
+    return Promise.reject(new Error('未登录'));
   }
 });
