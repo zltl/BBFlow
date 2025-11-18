@@ -6,6 +6,13 @@ App({
 
   onLaunch() {
     console.log('安压宝小程序启动');
+    if (!wx.cloud) {
+      console.error('当前基础库版本过低，请升级以使用云能力');
+    } else {
+      wx.cloud.init({
+        traceUser: true
+      });
+    }
     this.checkAuth();
   },
 
@@ -21,7 +28,7 @@ App({
       wx.login({
         success: (res) => {
           if (res.code) {
-            console.log('登录成功，code:', res.code);
+            console.log('登录成功，res ->', JSON.stringify(res));
             // 实际项目中需要发送code到后端换取openid
             // 这里简化处理，仅标记已登录
             wx.setStorageSync('hasAuth', true);
