@@ -1,62 +1,62 @@
-<view class="page">
-  <view class="card">
-    <view class="section-title">血压数据</view>
-    
-    <view class="form-item">
-      <view class="label">收缩压（高压）<text class="unit">mmHg</text></view>
-      <input class="input" type="digit" placeholder="请输入收缩压（70-260）" value="{{systolic}}" bindinput="onSystolicInput" />
-    </view>
-
-    <view class="form-item">
-      <view class="label">舒张压（低压）<text class="unit">mmHg</text></view>
-      <input class="input" type="digit" placeholder="请输入舒张压（40-150）" value="{{diastolic}}" bindinput="onDiastolicInput" />
-    </view>
-
-    <view class="form-item">
-      <view class="label">心率<text class="unit">次/分</text></view>
-      <input class="input" type="digit" placeholder="请输入心率（30-200）" value="{{heartRate}}" bindinput="onHeartRateInput" />
-    </view>
-
-    <view class="form-item">
-      <view class="label">测量时间</view>
-      <picker mode="date" value="{{measuredAt}}" bindchange="onTimeChange">
-        <view class="picker">{{measuredAt || '请选择时间'}}</view>
-      </picker>
+<view class="container">
+  <view class="ocr-section">
+    <view class="ocr-card" bindtap="onOCRScan">
+      <view class="ocr-icon">📷</view>
+      <view class="ocr-text">拍照智能识别</view>
+      <view class="ocr-subtext">自动识别屏幕读数</view>
     </view>
   </view>
 
-  <view class="card">
-    <view class="section-title">标签（可多选）</view>
-    <view class="tags">
-      <view 
-        wx:for="{{tags}}" 
-        wx:key="*this" 
-        class="tag {{selectedTags.indexOf(item) > -1 ? 'tag-active' : ''}}"
-        data-tag="{{item}}"
-        bindtap="toggleTag"
-      >
-        {{item}}
+  <form bindsubmit="saveRecord">
+    <view class="form-group">
+      <view class="form-item">
+        <text class="label">收缩压 (高压)</text>
+        <input class="input" type="number" name="systolic" value="{{systolic}}" placeholder="70-260 mmHg" bindinput="onSystolicInput" />
+      </view>
+      <view class="form-item">
+        <text class="label">舒张压 (低压)</text>
+        <input class="input" type="number" name="diastolic" value="{{diastolic}}" placeholder="40-150 mmHg" bindinput="onDiastolicInput" />
+      </view>
+      <view class="form-item">
+        <text class="label">心率</text>
+        <input class="input" type="number" name="heartRate" value="{{heartRate}}" placeholder="30-200 次/分" bindinput="onHeartRateInput" />
       </view>
     </view>
-  </view>
 
-  <view class="card">
-    <view class="section-title">备注（可选）</view>
-    <textarea 
-      class="textarea" 
-      placeholder="最多50字" 
-      maxlength="50" 
-      value="{{note}}"
-      bindinput="onNoteInput"
-    />
-  </view>
+    <view class="form-group">
+      <view class="form-item">
+        <text class="label">测量时间</text>
+        <picker mode="date" value="{{date}}" bindchange="bindDateChange">
+          <view class="picker">
+            {{date}}
+          </view>
+        </picker>
+        <picker mode="time" value="{{time}}" bindchange="bindTimeChange">
+          <view class="picker" style="margin-left: 20rpx;">
+            {{time}}
+          </view>
+        </picker>
+      </view>
+    </view>
 
-  <view class="card">
-    <button class="btn btn-primary" bindtap="handleSave">保存记录</button>
-  </view>
+    <view class="form-group">
+      <view class="section-title">标签</view>
+      <view class="tags-container">
+        <block wx:for="{{tags}}" wx:key="*this">
+          <view class="tag {{selectedTags[item] ? 'selected' : ''}}" bindtap="toggleTag" data-tag="{{item}}">
+            {{item}}
+          </view>
+        </block>
+      </view>
+    </view>
 
-  <view class="card tips">
-    <view class="section-title">拍照识别（规划中）</view>
-    <view class="tip-text">未来版本将支持拍照自动识别血压计读数</view>
-  </view>
+    <view class="form-group">
+      <view class="section-title">备注</view>
+      <textarea class="textarea" name="note" placeholder="如有不适请备注（最多50字）" maxlength="50" bindinput="onNoteInput"></textarea>
+    </view>
+
+    <view class="btn-area">
+      <button type="primary" formType="submit">保存记录</button>
+    </view>
+  </form>
 </view>

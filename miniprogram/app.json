@@ -1,14 +1,35 @@
 {
   "pages": [
-    "pages/index/index",
     "pages/record/record",
-    "pages/history/history"
+    "pages/trend/trend",
+    "pages/history/history",
+    "pages/logs/logs"
   ],
   "window": {
-    "navigationBarTitleText": "安压宝",
-    "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f5f5f5"
+    "navigationBarTitleText": "安压宝",
+    "navigationBarBackgroundColor": "#ffffff"
   },
-  "sitemapLocation": "sitemap.json"
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#1890ff",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/record/record",
+        "text": "记录"
+      },
+      {
+        "pagePath": "pages/trend/trend",
+        "text": "趋势"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史"
+      }
+    ]
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents"
 }

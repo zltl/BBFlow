@@ -1,52 +1,23 @@
-<view class="page">
-  <!-- 欢迎引导页 -->
-  <view wx:if="{{showWelcome}}" class="welcome-modal">
-    <view class="welcome-content">
-      <view class="welcome-title">欢迎使用安压宝</view>
-      <view class="welcome-desc">
-        <view class="welcome-item">📝 轻松记录血压数据</view>
-        <view class="welcome-item">📊 查看血压变化趋势</view>
-        <view class="welcome-item">🔒 数据安全保存本地</view>
-      </view>
-      
-      <view class="disclaimer">
-        <view class="disclaimer-title">免责声明</view>
-        <view class="disclaimer-text">本工具仅用于健康数据记录与展示，不提供任何诊断和治疗结论。如有健康问题，请及时就医。</view>
-      </view>
-
-      <button class="btn btn-primary" bindtap="closeWelcome">我已了解，开始使用</button>
+<!--index.wxml-->
+<scroll-view class="scrollarea" scroll-y type="list">
+  <view class="container">
+    <view class="userinfo">
+      <block wx:if="{{canIUseNicknameComp && !hasUserInfo}}">
+        <button class="avatar-wrapper" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
+          <image class="avatar" src="{{userInfo.avatarUrl}}"></image>
+        </button>
+      </block>
+      <block wx:elif="{{!hasUserInfo}}">
+        <button wx:if="{{canIUseGetUserProfile}}" bindtap="getUserProfile"> 获取头像昵称 </button>
+        <view wx:else> 请使用2.10.4及以上版本基础库 </view>
+      </block>
+      <block wx:else>
+        <image bindtap="bindViewTap" class="userinfo-avatar" src="{{userInfo.avatarUrl}}" mode="cover"></image>
+        <text class="userinfo-nickname">{{userInfo.nickName}}</text>
+      </block>
+    </view>
+    <view class="usermotto">
+      <text class="user-motto">{{motto}}</text>
     </view>
   </view>
-
-  <view class="card hero">
-    <view class="title">守护家人的血压记录</view>
-    <view class="subtitle">快速记录 · 趋势图表 · 一键分享</view>
-  </view>
-
-  <view wx:if="{{!userInfo}}" class="card login-card">
-    <view class="section-title">欢迎使用</view>
-    <view class="login-hint">登录后可同步数据</view>
-    <button class="btn btn-primary" bindtap="handleLogin">微信登录</button>
-  </view>
-
-  <view wx:else class="card user-card">
-    <view class="user-info">
-      <image class="avatar" src="{{userInfo.avatarUrl}}" />
-      <view class="nickname">{{userInfo.nickName}}</view>
-    </view>
-  </view>
-
-  <view class="card">
-    <view class="section-title">立即开始</view>
-    <button class="btn btn-primary" bindtap="handleRecord">记录血压</button>
-    <button class="btn btn-secondary" bindtap="handleHistory">查看历史</button>
-  </view>
-
-  <view class="card">
-    <view class="section-title">规划中的能力</view>
-    <view class="feature">· 拍照自动识别血压计读数</view>
-    <view class="feature">· 周/月血压趋势图</view>
-    <view class="feature">· 分享报告给家人/医生</view>
-    <view class="feature">· 用药记录与提醒</view>
-  </view>
-</view>
+</scroll-view>

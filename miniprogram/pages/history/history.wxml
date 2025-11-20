@@ -1,59 +1,46 @@
-<view class="page">
-  <view class="card filter-bar">
-    <view class="filter-label">筛选日期：</view>
-    <picker mode="date" value="{{filterDate}}" bindchange="onDateChange">
-      <view class="filter-date">
-        {{filterDate || '全部日期'}}
+<view class="container">
+  <view class="header">
+    <picker mode="date" fields="month" value="{{filterDate}}" bindchange="onDateFilterChange">
+      <view class="filter-btn">
+        {{filterDate || '全部日期'}} <text class="arrow">▼</text>
       </view>
     </picker>
-    <view wx:if="{{filterDate}}" class="clear-filter" bindtap="clearFilter">清除</view>
-  </view>
-
-  <view wx:if="{{records.length === 0}}" class="card empty">
-    <view class="empty-icon">📊</view>
-    <view class="empty-text">暂无记录</view>
-    <view class="empty-hint">点击首页"记录血压"开始添加数据</view>
-  </view>
-
-  <view wx:else>
-    <view wx:for="{{records}}" wx:key="index" class="card record-item">
-      <view class="record-header">
-        <view class="record-time">{{item.measuredAt}}</view>
-        <view class="record-source">{{item.source === 'manual' ? '手动录入' : '自动识别'}}</view>
-      </view>
-
-      <view class="record-data">
-        <view class="data-item">
-          <view class="data-label">收缩压</view>
-          <view class="data-value">
-            <text class="value-num {{item.bpStatus}}">{{item.systolic}}</text>
-            <text class="value-unit">mmHg</text>
-          </view>
-        </view>
-        <view class="data-item">
-          <view class="data-label">舒张压</view>
-          <view class="data-value">
-            <text class="value-num {{item.bpStatus}}">{{item.diastolic}}</text>
-            <text class="value-unit">mmHg</text>
-          </view>
-        </view>
-        <view class="data-item">
-          <view class="data-label">心率</view>
-          <view class="data-value">
-            <text class="value-num">{{item.heartRate}}</text>
-            <text class="value-unit">次/分</text>
-          </view>
-        </view>
-      </view>
-
-      <view wx:if="{{item.tags && item.tags.length > 0}}" class="record-tags">
-        <text wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this" class="mini-tag">{{tag}}</text>
-      </view>
-
-      <view class="record-actions">
-        <view class="action-btn" data-index="{{index}}" bindtap="viewDetail">查看详情</view>
-        <view class="action-btn delete" data-index="{{index}}" bindtap="deleteRecord">删除</view>
-      </view>
+    <view class="stats" wx:if="{{records.length > 0}}">
+      共 {{records.length}} 条记录
     </view>
   </view>
+
+  <scroll-view scroll-y class="list-container">
+    <block wx:if="{{records.length === 0}}">
+      <view class="empty-state">
+        <text>暂无记录</text>
+        <button class="add-btn" bindtap="goToRecord">去记录</button>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="record-item" wx:for="{{records}}" wx:key="id" bindtap="showDetail" data-item="{{item}}">
+        <view class="record-main">
+          <view class="record-time">{{item.measuredAt}}</view>
+          <view class="record-values">
+            <view class="value-group">
+              <text class="label">高压</text>
+              <text class="value {{item.systolic > 140 || item.systolic < 90 ? 'warning' : ''}}">{{item.systolic}}</text>
+            </view>
+            <view class="divider">/</view>
+            <view class="value-group">
+              <text class="label">低压</text>
+              <text class="value {{item.diastolic > 90 || item.diastolic < 60 ? 'warning' : ''}}">{{item.diastolic}}</text>
+            </view>
+            <view class="value-group hr">
+              <text class="label">心率</text>
+              <text class="value">{{item.heartRate}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="record-tags" wx:if="{{item.tags && item.tags.length > 0}}">
+          <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+        </view>
+      </view>
+    </block>
+  </scroll-view>
 </view>

@@ -1,0 +1,145 @@
+/* Global Page Settings - Grafana Light Theme */
+page {
+  background-color: #f4f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei',
+    sans-serif;
+}
+
+.container {
+  padding: 20rpx;
+  padding-bottom: 60rpx;
+}
+
+/* Chart Section - Grafana Light Theme */
+.chart-container {
+  background-color: #ffffff;
+  border-radius: 8rpx;
+  padding: 0;
+  margin-bottom: 30rpx;
+  box-shadow: 0 0 2rpx rgba(24, 26, 27, 0.12);
+  border: 1rpx solid rgba(36, 41, 46, 0.12);
+  overflow: hidden;
+}
+
+.chart-header {
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid rgba(36, 41, 46, 0.12);
+  background-color: #fafafa;
+}
+
+.chart-label {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #18181b;
+  letter-spacing: 0.5rpx;
+}
+
+.chart-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #18181b;
+  margin-bottom: 20rpx;
+  text-align: center;
+  letter-spacing: 1rpx;
+}
+
+.chart-scroll {
+  width: 100%;
+  height: 520rpx;
+  background-color: #ffffff;
+  padding: 20rpx 0;
+}
+
+.chart {
+  height: 500rpx;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx;
+  background-color: #fafafa;
+  border-top: 1rpx solid rgba(36, 41, 46, 0.08);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin: 0 16rpx;
+  font-size: 24rpx;
+  color: #52545c;
+  background-color: #ffffff;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(36, 41, 46, 0.12);
+  box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.05);
+}
+
+.dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  margin-right: 10rpx;
+}
+
+.dot.high {
+  background-color: rgb(255, 152, 0);
+  color: rgb(255, 152, 0);
+}
+
+.dot.low {
+  background-color: rgb(54, 162, 235);
+  color: rgb(54, 162, 235);
+}
+
+.dot.heart-rate {
+  background-color: rgb(255, 59, 48);
+  color: rgb(255, 59, 48);
+}
+
+/* Stats Section */
+.stats-container {
+  display: flex;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 1rpx solid #e8f5e9;
+  border-radius: 24rpx;
+  padding: 40rpx 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(7, 193, 96, 0.08);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.stat-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1rpx;
+  background-color: #eee;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #888;
+  margin-bottom: 12rpx;
+}
+
+.stat-value {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #333;
+  font-family: 'DIN Alternate', 'Roboto', sans-serif; /* Use a number-friendly font if available */
+}
+
+.stat-value.highlight {
+  color: #07c160;
+}

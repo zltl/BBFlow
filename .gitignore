@@ -1,0 +1,30 @@
+/.secret*
+
+# Dependencies
+node_modules/
+miniprogram_npm/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build Artifacts (Mini Program)
+# Ignore JS files compiled from TS in miniprogram directory
+miniprogram/**/*.js
+miniprogram/**/*.js.map
+
+# Build Artifacts (Server)
+server/dist/
+server/out/
+coverage/
+
+# Editor
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
