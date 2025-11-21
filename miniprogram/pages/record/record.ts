@@ -1,4 +1,5 @@
 import { request } from '../../utils/request';
+import { API_ENDPOINTS } from '../../config';
 
 Page({
   data: {
@@ -84,7 +85,7 @@ Page({
         });
 
         wx.uploadFile({
-          url: 'http://localhost:3000/api/ocr/recognize', // Replace with your actual server URL
+          url: API_ENDPOINTS.OCR_RECOGNIZE,
           filePath: tempFilePath,
           name: 'image',
           success(uploadRes) {

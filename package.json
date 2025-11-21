@@ -1,15 +1,24 @@
 {
-  "name": "miniprogram-ts-quickstart",
+  "name": "bbflow-miniprogram",
   "version": "1.0.0",
-  "description": "",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "",
+  "description": "安压宝 - 高血压健康管理小程序",
+  "scripts": {
+    "dev": "tsc -w",
+    "build": "tsc"
+  },
+  "keywords": [
+    "wechat",
+    "miniprogram",
+    "blood-pressure",
+    "health"
+  ],
+  "author": "zltl",
+  "license": "MIT",
   "devDependencies": {
     "@types/ali-oss": "^6.16.13",
     "@types/multer": "^2.0.0",
-    "miniprogram-api-typings": "^2.8.3-1"
+    "miniprogram-api-typings": "^4.1.0",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "ali-oss": "^6.23.0"

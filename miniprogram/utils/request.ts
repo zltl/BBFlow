@@ -1,10 +1,10 @@
-const BASE_URL = 'http://localhost:3000/api';
+import { API_BASE_URL } from '../config';
 
 export const request = <T>(options: WechatMiniprogram.RequestOption): Promise<T> => {
   return new Promise((resolve, reject) => {
     wx.request({
       ...options,
-      url: `${BASE_URL}${options.url}`,
+      url: `${API_BASE_URL}${options.url}`,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T);

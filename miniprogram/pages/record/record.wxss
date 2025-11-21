@@ -64,8 +64,9 @@ page {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 32rpx 0;
-  border-bottom: 1rpx solid #f5f5f5;
+  padding: 30rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  transition: background-color 0.2s;
 }
 
 .form-item:last-child {
@@ -76,14 +77,17 @@ page {
   font-size: 30rpx;
   color: #333;
   font-weight: 500;
+  min-width: 200rpx;
 }
 
 .input {
   flex: 1;
   text-align: right;
-  font-size: 32rpx;
+  font-size: 36rpx;
   color: #333;
   font-weight: 600;
+  padding: 10rpx;
+  border-radius: 8rpx;
 }
 
 .input-placeholder {

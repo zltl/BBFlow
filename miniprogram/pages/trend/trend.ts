@@ -8,6 +8,8 @@ Page({
     scrollLeftHR: 0
   },
 
+  isSyncingScroll: false,
+
   onShow() {
     this.loadDataAndDraw();
   },
@@ -29,7 +31,13 @@ Page({
 
       if (records.length === 0) return;
 
-      this.drawChart(records);
+      // 统一计算时间轴范围（使用所有记录的时间戳）
+      const timestamps = records.map(r => new Date(r.measured_at).getTime());
+      const minTime = Math.min(...timestamps);
+      const maxTime = Math.max(...timestamps);
+      const timeRange = maxTime - minTime;
+
+      this.drawChart(records, minTime, maxTime, timeRange);
       this.drawHeartRateChart(records);
 
     } catch (err) {
@@ -37,276 +45,325 @@ Page({
     }
   },
 
-  drawChart(records: any[]) {
+  // Helper function to draw smooth curves using Catmull-Rom splines
+  drawSmoothLine(ctx: any, points: {x: number, y: number}[], tension: number = 0.5) {
+    if (points.length < 2) return;
+    
+    ctx.moveTo(points[0].x, points[0].y);
+    
+    if (points.length === 2) {
+      ctx.lineTo(points[1].x, points[1].y);
+      return;
+    }
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i === 0 ? i : i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+      
+      const cp1x = p1.x + (p2.x - p0.x) / 6 * tension;
+      const cp1y = p1.y + (p2.y - p0.y) / 6 * tension;
+      const cp2x = p2.x - (p3.x - p1.x) / 6 * tension;
+      const cp2y = p2.y - (p3.y - p1.y) / 6 * tension;
+      
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+  },
+
+  // Scroll synchronization state
+  _scrollSource: null as 'BP' | 'HR' | null,
+  _scrollTimeout: null as number | null,
+
+  handleBPScroll(e: WechatMiniprogram.ScrollViewScroll) {
+    // If currently synced by HR, ignore this event
+    if (this._scrollSource === 'HR') return;
+
+    this._scrollSource = 'BP';
+    
+    // Only update the OTHER chart
+    this.setData({
+      scrollLeftHR: e.detail.scrollLeft
+    });
+
+    this._resetScrollSource();
+  },
+
+  handleHRScroll(e: WechatMiniprogram.ScrollViewScroll) {
+    // If currently synced by BP, ignore this event
+    if (this._scrollSource === 'BP') return;
+
+    this._scrollSource = 'HR';
+
+    // Only update the OTHER chart
+    this.setData({
+      scrollLeft: e.detail.scrollLeft
+    });
+
+    this._resetScrollSource();
+  },
+
+  _resetScrollSource() {
+    if (this._scrollTimeout) clearTimeout(this._scrollTimeout);
+    this._scrollTimeout = setTimeout(() => {
+      this._scrollSource = null;
+    }, 100) as unknown as number;
+  },
+
+  drawChart(records: any[], minTime: number, maxTime: number, timeRange: number) {
     const sysInfo = wx.getSystemInfoSync();
     
-    // Parse all timestamps
+    // Use shared time range for synchronization
     const timestamps = records.map(r => new Date(r.measured_at).getTime());
-    const minTime = Math.min(...timestamps);
-    const maxTime = Math.max(...timestamps);
-    const timeRange = maxTime - minTime;
     
-    // Calculate width based on time span (Grafana-like approach)
-    // If time range is small or zero, use minimum width
-    const pixelsPerDay = 100; // How many pixels per day
-    const daysSpan = timeRange / (1000 * 60 * 60 * 24);
-    const minWidth = sysInfo.windowWidth - 40;
+    // 1. Group by day to determine layout
+    const days = Array.from(new Set(records.map(r => {
+        const d = new Date(r.measured_at);
+        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    }))).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    // Ensure enough space for each point (fix for short time range with many points)
-    const pixelsPerPoint = 60;
-    const widthByPoints = records.length * pixelsPerPoint;
-
-    const calculatedWidth = Math.max(minWidth, daysSpan * pixelsPerDay + 100, widthByPoints);
+    const pixelsPerDay = 200; // Fixed width per day
+    const calculatedWidth = days.length * pixelsPerDay + 60; // Add buffer
 
     this.setData({ canvasWidth: calculatedWidth }, () => {
       const query = wx.createSelectorQuery();
-      query.select('#trendChart')
-        .fields({ node: true, size: true })
-        .exec((res) => {
-          if (!res[0]) return;
+      query.select('#trendChart').fields({ node: true, size: true });
+      query.select('#yAxisBP').fields({ node: true, size: true });
+      
+      query.exec((res) => {
+          if (!res[0] || !res[1]) return;
           
           const canvas = res[0].node;
           const ctx = canvas.getContext('2d');
+          const yAxisCanvas = res[1].node;
+          const yCtx = yAxisCanvas.getContext('2d');
 
           const dpr = sysInfo.pixelRatio;
           const width = calculatedWidth;
           const height = res[0].height;
+          const yAxisWidth = res[1].width;
 
           canvas.width = width * dpr;
           canvas.height = height * dpr;
           ctx.scale(dpr, dpr);
 
-          const paddingLeft = 50;
+          yAxisCanvas.width = yAxisWidth * dpr;
+          yAxisCanvas.height = height * dpr;
+          yCtx.scale(dpr, dpr);
+
+          const paddingLeft = yAxisWidth + 10; // Ensure start of chart clears the Y-axis overlay
           const paddingRight = 20;
           const paddingTop = 30;
-          const paddingBottom = 40;
-          const graphWidth = width - paddingLeft - paddingRight;
+          const paddingBottom = 50; // Increased for dual labels
+          // const graphWidth = width - paddingLeft - paddingRight;
           const graphHeight = height - paddingTop - paddingBottom;
 
-          // Clear
+          // Clear both canvases
           ctx.clearRect(0, 0, width, height);
+          yCtx.clearRect(0, 0, yAxisWidth, height);
 
           // Background (white for light theme)
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
+          
+          // Y-axis background (semi-transparent)
+          yCtx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          yCtx.fillRect(0, 0, yAxisWidth, height);
 
           // Find min/max for Y axis scaling
           const allValues = records.flatMap(r => [r.systolic, r.diastolic]);
-          const minVal = Math.floor(Math.min(...allValues) / 10) * 10 - 10;
-          const maxVal = Math.ceil(Math.max(...allValues) / 10) * 10 + 10;
+          let minVal = Math.floor(Math.min(...allValues) / 20) * 20 - 20;
+          let maxVal = Math.ceil(Math.max(...allValues) / 20) * 20 + 20;
+          
+          // Enforce minimum range and boundaries
+          if (minVal > 40) minVal = 40;
+          if (maxVal < 180) maxVal = 180;
+          
+          // Ensure interval is 20
           const range = maxVal - minVal;
+          const stepSize = 20;
+          const ySteps = Math.round(range / stepSize);
 
           // Helper to map value to Y coordinate
           const getY = (val: number) => {
             return paddingTop + graphHeight - ((val - minVal) / range) * graphHeight;
           };
 
-          // Helper to map timestamp to X coordinate (Grafana-style: based on actual time)
+          // Helper to map timestamp to X coordinate (Day-based layout)
           const getX = (timestamp: number) => {
-            if (timeRange === 0) return paddingLeft + graphWidth / 2;
-            const ratio = (timestamp - minTime) / timeRange;
-            return paddingLeft + ratio * graphWidth;
+            const d = new Date(timestamp);
+            const dateStr = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+            const dayIndex = days.indexOf(dateStr);
+            if (dayIndex === -1) return paddingLeft;
+
+            const dayStartX = paddingLeft + dayIndex * pixelsPerDay;
+            
+            // Time offset within the day (0 to 1)
+            const msInDay = (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()) * 1000 + d.getMilliseconds();
+            const msPerDay = 24 * 3600 * 1000;
+            const ratio = msInDay / msPerDay;
+            
+            return dayStartX + ratio * pixelsPerDay;
           };
+
+          // Draw Hypertension Level Background Bands (Chinese standard)
+          const hypertensionBands = [
+            { min: 0, max: 140, color: 'rgba(82, 196, 26, 0.1)', label: '正常' },        // Normal (Very pale mint green)
+            { min: 140, max: 160, color: 'rgba(250, 173, 20, 0.1)', label: '一级高血压' }, // Level 1 (Very pale cream yellow)
+            { min: 160, max: 300, color: 'rgba(255, 77, 79, 0.1)', label: '危险区' }      // Danger Zone (Very pale pink)
+          ];
+          
+          hypertensionBands.forEach(band => {
+            if (band.max > minVal && band.min < maxVal) {
+              const yTop = getY(Math.min(band.max, maxVal));
+              const yBottom = getY(Math.max(band.min, minVal));
+              ctx.fillStyle = band.color;
+              ctx.fillRect(paddingLeft, yTop, width - paddingLeft - paddingRight, yBottom - yTop);
+            }
+          });
 
           // Draw Grid Lines (Grafana light theme style)
           ctx.strokeStyle = 'rgba(36, 41, 46, 0.12)';
           ctx.lineWidth = 1;
           
           // Horizontal grid lines
-          const ySteps = 5;
+          ctx.setLineDash([4, 4]); // Dashed
           for (let i = 0; i <= ySteps; i++) {
             const y = paddingTop + (i / ySteps) * graphHeight;
+            
+            // Draw grid line on main chart
             ctx.beginPath();
             ctx.moveTo(paddingLeft, y);
             ctx.lineTo(width - paddingRight, y);
             ctx.stroke();
             
-            // Y axis labels
-            const val = maxVal - (i / ySteps) * range;
-            ctx.fillStyle = '#52545c';
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(Math.round(val).toString(), paddingLeft - 8, y + 4);
+            // Draw label on Y-axis canvas
+            const val = maxVal - i * stepSize;
+            yCtx.fillStyle = '#666666';
+            yCtx.font = '11px sans-serif';
+            yCtx.textAlign = 'right';
+            yCtx.textBaseline = 'middle';
+            yCtx.fillText(Math.round(val).toString(), yAxisWidth - 5, y);
           }
+          ctx.setLineDash([]); // Reset
 
-          // Draw Hypertension Threshold Lines (China Standard)
-          const thresholds = [
-            { value: 180, label: '3级', color: 'rgba(255, 59, 48, 0.6)' },   // Red
-            { value: 160, label: '2级', color: 'rgba(255, 149, 0, 0.6)' },   // Orange
-            { value: 140, label: '1级', color: 'rgba(255, 204, 0, 0.6)' },   // Yellow
-            { value: 110, label: '3级(低)', color: 'rgba(255, 59, 48, 0.6)' },
-            { value: 100, label: '2级(低)', color: 'rgba(255, 149, 0, 0.6)' },
-            { value: 90, label: '1级(低)', color: 'rgba(255, 204, 0, 0.6)' },
-          ];
+          // Threshold lines removed for cleaner visualization
+          // Users can rely on background color bands and point colors to identify abnormal values
 
-          ctx.save();
-          ctx.setLineDash([4, 2]);
-          ctx.lineWidth = 1;
-          ctx.font = '10px sans-serif';
-          ctx.textAlign = 'right';
+          // Draw Day Grid and Labels
+          ctx.textAlign = 'center';
+          ctx.font = '11px sans-serif';
+          
+          days.forEach((dayStr, index) => {
+             const dayStartX = paddingLeft + index * pixelsPerDay;
+             const dayCenterX = dayStartX + pixelsPerDay / 2;
+             
+             // 1. Day Separator Line (Left border of the day)
+             ctx.beginPath();
+             ctx.moveTo(dayStartX, paddingTop);
+             ctx.lineTo(dayStartX, height - paddingBottom);
+             ctx.strokeStyle = 'rgba(36, 41, 46, 0.2)'; // Slightly darker for day boundary
+             ctx.lineWidth = 1;
+             ctx.stroke();
 
-          thresholds.forEach(t => {
-            // Only draw if within current view range
-            if (t.value > minVal && t.value < maxVal) {
-              const y = getY(t.value);
-              
-              ctx.beginPath();
-              ctx.strokeStyle = t.color;
-              ctx.fillStyle = t.color;
-              
-              // Draw line
-              ctx.moveTo(paddingLeft, y);
-              ctx.lineTo(width - paddingRight, y);
-              ctx.stroke();
-              
-              // Draw label
-              ctx.fillText(`${t.label} ${t.value}`, width - paddingRight, y - 4);
-            }
+             // 2. Noon Separator (Dashed)
+             const noonX = dayStartX + pixelsPerDay * 0.5;
+             ctx.beginPath();
+             ctx.setLineDash([4, 4]);
+             ctx.moveTo(noonX, paddingTop);
+             ctx.lineTo(noonX, height - paddingBottom);
+             ctx.strokeStyle = 'rgba(36, 41, 46, 0.1)';
+             ctx.stroke();
+             ctx.setLineDash([]); // Reset
+
+             // 3. Morning/Evening Labels (Top layer)
+             ctx.fillStyle = '#666666';
+             ctx.font = '11px sans-serif';
+             ctx.fillText('早', dayStartX + pixelsPerDay * 0.25, height - paddingBottom + 15);
+             ctx.fillText('晚', dayStartX + pixelsPerDay * 0.75, height - paddingBottom + 15);
+
+             // 4. Date Label (Bottom layer)
+             const [, month, day] = dayStr.split('-');
+             const dateLabel = `${month}/${day}`;
+             ctx.fillStyle = '#999999';
+             ctx.font = '11px sans-serif';
+             ctx.fillText(dateLabel, dayCenterX, height - paddingBottom + 35);
           });
-          ctx.restore();
+          
+          // Draw final right border
+          const finalX = paddingLeft + days.length * pixelsPerDay;
+          ctx.beginPath();
+          ctx.moveTo(finalX, paddingTop);
+          ctx.lineTo(finalX, height - paddingBottom);
+          ctx.strokeStyle = 'rgba(36, 41, 46, 0.2)';
+          ctx.stroke();
 
-          // Vertical grid lines (time-based)
-          const xSteps = Math.min(10, records.length);
-          for (let i = 0; i <= xSteps; i++) {
-            const timeVal = minTime + (i / xSteps) * timeRange;
-            const x = getX(timeVal);
-            ctx.beginPath();
-            ctx.moveTo(x, paddingTop);
-            ctx.lineTo(x, height - paddingBottom);
-            ctx.strokeStyle = 'rgba(36, 41, 46, 0.12)';
-            ctx.stroke();
-          }
-
-          // Draw area fill (Grafana-style gradient fill under lines)
-          const drawAreaFill = (dataKey: string, color: string, alpha: number) => {
-            const gradient = ctx.createLinearGradient(0, paddingTop, 0, height - paddingBottom);
-            gradient.addColorStop(0, color.replace('rgb', 'rgba').replace(')', `, ${alpha})`));
-            gradient.addColorStop(1, color.replace('rgb', 'rgba').replace(')', ', 0)'));
-            
-            ctx.beginPath();
-            records.forEach((r, i) => {
-              const x = getX(timestamps[i]);
-              const y = getY(r[dataKey]);
-              if (i === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            });
-            // Close the path to bottom
-            const lastX = getX(timestamps[timestamps.length - 1]);
-            ctx.lineTo(lastX, height - paddingBottom);
-            ctx.lineTo(getX(timestamps[0]), height - paddingBottom);
-            ctx.closePath();
-            ctx.fillStyle = gradient;
-            ctx.fill();
-          };
+          // Area fill removed for cleaner visualization
 
           // Draw Lines (Grafana-style: smooth and prominent)
-          const drawLine = (dataKey: string, color: string) => {
-            // Draw area first
-            drawAreaFill(dataKey, color, 0.2);
+          const drawLine = (dataKey: string, color: string, normalMin: number, normalMax: number, labelPos: 'top' | 'bottom') => {
+            // Skip area fill for cleaner look
             
-            // Draw line
+            // Prepare points for smooth curve
+            const points = records.map((r, i) => ({
+              x: getX(timestamps[i]),
+              y: getY(r[dataKey])
+            }));
+            
+            // Draw smooth line
             ctx.beginPath();
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2.5; // Thicker line
             ctx.lineJoin = 'round';
-            
-            records.forEach((r, i) => {
-              const x = getX(timestamps[i]);
-              const y = getY(r[dataKey]);
-              if (i === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            });
+            this.drawSmoothLine(ctx, points, 0.6);
             ctx.stroke();
 
-            // Draw Points with hover effect style
+            // Find min and max values
+            // const values = records.map(r => r[dataKey]);
+            // const maxValue = Math.max(...values);
+            // const minValue = Math.min(...values);
+
+            // Draw Points
             records.forEach((r, i) => {
               const x = getX(timestamps[i]);
               const y = getY(r[dataKey]);
+              const value = r[dataKey];
+              const isAbnormal = value > normalMax || value < normalMin;
               
-              // Outer circle (glow)
-              ctx.beginPath();
-              ctx.arc(x, y, 5, 0, Math.PI * 2);
-              ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ', 0.3)');
-              ctx.fill();
+              // Determine point color
+              const pointColor = isAbnormal ? '#ff4d4f' : color;
               
-              // Inner circle
-              ctx.beginPath();
-              ctx.arc(x, y, 3, 0, Math.PI * 2);
-              ctx.fillStyle = color;
-              ctx.fill();
+            // Draw point
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, Math.PI * 2); // Larger point
+            ctx.fillStyle = pointColor; // Solid color
+            ctx.fill();
+            // ctx.lineWidth = 2;
+            // ctx.strokeStyle = pointColor; // Colored border
+            // ctx.stroke();
               
-              ctx.beginPath();
-              ctx.arc(x, y, 3, 0, Math.PI * 2);
-              ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 1.5;
-              ctx.stroke();
-              
-              // Draw value label above point
+              // Show labels for all values
               ctx.save();
-              ctx.fillStyle = color;
-              ctx.font = 'bold 11px sans-serif';
+              ctx.fillStyle = isAbnormal ? '#FF4D4F' : '#333333';
+              ctx.font = isAbnormal ? 'bold 12px sans-serif' : '12px sans-serif'; // Larger font
               ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
               
-              // Add background rectangle for better readability
-              const text = r[dataKey].toString();
-              const metrics = ctx.measureText(text);
-              const textWidth = metrics.width;
-              const textHeight = 12;
-              const padding = 3;
+              // Force label position based on line type to avoid overlap
+              // Systolic (top) labels go up, Diastolic (bottom) labels go down
+              const isTop = labelPos === 'top';
+              ctx.textBaseline = isTop ? 'bottom' : 'top';
+              const offsetY = isTop ? -10 : 10;
               
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-              ctx.fillRect(
-                x - textWidth / 2 - padding,
-                y - textHeight - padding - 8,
-                textWidth + padding * 2,
-                textHeight + padding * 2
-              );
+              const text = value.toString();
               
-              // Draw border
-              ctx.strokeStyle = color;
-              ctx.lineWidth = 1;
-              ctx.strokeRect(
-                x - textWidth / 2 - padding,
-                y - textHeight - padding - 8,
-                textWidth + padding * 2,
-                textHeight + padding * 2
-              );
-              
-              // Draw text
-              ctx.fillStyle = color;
-              ctx.fillText(text, x, y - 8);
+              // Text without background
+              ctx.fillText(text, x, y + offsetY);
               ctx.restore();
             });
           };
 
-          drawLine('systolic', 'rgb(255, 152, 0)');
-          drawLine('diastolic', 'rgb(54, 162, 235)');
-
-          // Draw X Axis Labels (Time-based, Grafana style)
-          ctx.fillStyle = '#52545c';
-          ctx.textAlign = 'center';
-          ctx.font = '11px sans-serif';
-          
-          // Show time labels at regular intervals
-          const labelSteps = Math.min(8, records.length);
-          for (let i = 0; i <= labelSteps; i++) {
-            const idx = Math.floor((i / labelSteps) * (records.length - 1));
-            if (idx >= records.length) continue;
-            
-            const date = new Date(records[idx].measured_at);
-            const x = getX(timestamps[idx]);
-            
-            // Format time label
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const hour = date.getHours().toString().padStart(2, '0');
-            const minute = date.getMinutes().toString().padStart(2, '0');
-            
-            // Show date and time
-            ctx.fillText(`${month}/${day}`, x, height - paddingBottom + 15);
-            ctx.fillText(`${hour}:${minute}`, x, height - paddingBottom + 28);
-          }
+          drawLine('systolic', '#FF6B6B', 90, 140, 'top');
+          drawLine('diastolic', '#4D96FF', 60, 90, 'bottom');
 
           // Scroll to the end (rightmost)
           this.setData({
@@ -319,56 +376,58 @@ Page({
   drawHeartRateChart(records: any[]) {
     const sysInfo = wx.getSystemInfoSync();
     
-    // Parse all timestamps
-    const timestamps = records.map(r => new Date(r.measured_at).getTime());
-    const minTime = Math.min(...timestamps);
-    const maxTime = Math.max(...timestamps);
-    const timeRange = maxTime - minTime;
-    
-    // Calculate width based on time span
-    const pixelsPerDay = 100;
-    const daysSpan = timeRange / (1000 * 60 * 60 * 24);
-    const minWidth = sysInfo.windowWidth - 40;
+    // 1. Group by day to determine layout
+    const days = Array.from(new Set(records.map(r => {
+        const d = new Date(r.measured_at);
+        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    }))).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    // Ensure enough space for each point
-    const pixelsPerPoint = 60;
-    const widthByPoints = records.length * pixelsPerPoint;
-
-    const calculatedWidth = Math.max(minWidth, daysSpan * pixelsPerDay + 100, widthByPoints);
+    const pixelsPerDay = 200; // Fixed width per day
+    const calculatedWidth = days.length * pixelsPerDay + 60; // Add buffer
 
     this.setData({ canvasWidthHR: calculatedWidth }, () => {
       const query = wx.createSelectorQuery();
-      query.select('#heartRateChart')
-        .fields({ node: true, size: true })
-        .exec((res) => {
-          if (!res[0]) return;
+      query.select('#heartRateChart').fields({ node: true, size: true });
+      query.select('#yAxisHR').fields({ node: true, size: true });
+      
+      query.exec((res) => {
+          if (!res[0] || !res[1]) return;
           
           const canvas = res[0].node;
           const ctx = canvas.getContext('2d');
+          const yAxisCanvas = res[1].node;
+          const yCtx = yAxisCanvas.getContext('2d');
 
           const dpr = sysInfo.pixelRatio;
           const width = calculatedWidth;
           const height = res[0].height;
+          const yAxisWidth = res[1].width;
 
           canvas.width = width * dpr;
           canvas.height = height * dpr;
           ctx.scale(dpr, dpr);
 
-          const paddingLeft = 50;
+          yAxisCanvas.width = yAxisWidth * dpr;
+          yAxisCanvas.height = height * dpr;
+          yCtx.scale(dpr, dpr);
+
+          const paddingLeft = yAxisWidth + 10;
           const paddingRight = 20;
           const paddingTop = 30;
-          const paddingBottom = 40;
-          const graphWidth = width - paddingLeft - paddingRight;
+          const paddingBottom = 50;
+          // const graphWidth = width - paddingLeft - paddingRight;
           const graphHeight = height - paddingTop - paddingBottom;
 
-          // Clear
+          // Clear both canvases
           ctx.clearRect(0, 0, width, height);
+          yCtx.clearRect(0, 0, yAxisWidth, height);
 
-          // Background (white for light theme)
+          // Backgrounds
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
+          yCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          yCtx.fillRect(0, 0, yAxisWidth, height);
 
-          // Filter records with heart rate data
           const hrRecords = records.filter(r => r.heart_rate);
           if (hrRecords.length === 0) {
             ctx.fillStyle = '#999';
@@ -380,166 +439,148 @@ Page({
 
           const hrTimestamps = hrRecords.map(r => new Date(r.measured_at).getTime());
           const hrValues = hrRecords.map(r => r.heart_rate);
-          const minVal = Math.floor(Math.min(...hrValues) / 10) * 10 - 10;
-          const maxVal = Math.ceil(Math.max(...hrValues) / 10) * 10 + 10;
+          
+          // Y-Axis Logic (Fixed interval 20)
+          const stepSize = 20;
+          let minVal = Math.floor(Math.min(...hrValues) / stepSize) * stepSize;
+          let maxVal = Math.ceil(Math.max(...hrValues) / stepSize) * stepSize;
+          
+          // Enforce min/max range for consistency
+          if (minVal > 40) minVal = 40;
+          if (maxVal < 180) maxVal = 180;
+          
           const range = maxVal - minVal;
+          const ySteps = range / stepSize;
 
-          // Helper to map value to Y coordinate
           const getY = (val: number) => {
             return paddingTop + graphHeight - ((val - minVal) / range) * graphHeight;
           };
 
-          // Helper to map timestamp to X coordinate
           const getX = (timestamp: number) => {
-            if (timeRange === 0) return paddingLeft + graphWidth / 2;
-            const ratio = (timestamp - minTime) / timeRange;
-            return paddingLeft + ratio * graphWidth;
+            const d = new Date(timestamp);
+            const dateStr = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+            const dayIndex = days.indexOf(dateStr);
+            if (dayIndex === -1) return paddingLeft;
+
+            const dayStartX = paddingLeft + dayIndex * pixelsPerDay;
+            const msInDay = (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds()) * 1000 + d.getMilliseconds();
+            const msPerDay = 24 * 3600 * 1000;
+            const ratio = msInDay / msPerDay;
+            return dayStartX + ratio * pixelsPerDay;
           };
 
-          // Draw Grid Lines
-          ctx.strokeStyle = 'rgba(36, 41, 46, 0.12)';
+          // Draw Grid Lines (Dashed)
+          ctx.strokeStyle = '#E0E0E0';
           ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
           
-          const ySteps = 5;
           for (let i = 0; i <= ySteps; i++) {
-            const y = paddingTop + (i / ySteps) * graphHeight;
+            const y = paddingTop + graphHeight - (i * stepSize / range) * graphHeight;
+            
             ctx.beginPath();
             ctx.moveTo(paddingLeft, y);
             ctx.lineTo(width - paddingRight, y);
             ctx.stroke();
             
-            const val = maxVal - (i / ySteps) * range;
-            ctx.fillStyle = '#52545c';
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText(Math.round(val).toString(), paddingLeft - 8, y + 4);
+            // Y-Axis Label
+            const val = minVal + i * stepSize;
+            yCtx.fillStyle = '#999999';
+            yCtx.font = '11px sans-serif';
+            yCtx.textAlign = 'right';
+            yCtx.textBaseline = 'middle';
+            yCtx.fillText(val.toString(), yAxisWidth - 8, y);
           }
+          ctx.setLineDash([]);
 
-          const xSteps = Math.min(10, hrRecords.length);
-          for (let i = 0; i <= xSteps; i++) {
-            const timeVal = minTime + (i / xSteps) * timeRange;
-            const x = getX(timeVal);
-            ctx.beginPath();
-            ctx.moveTo(x, paddingTop);
-            ctx.lineTo(x, height - paddingBottom);
-            ctx.strokeStyle = 'rgba(36, 41, 46, 0.12)';
-            ctx.stroke();
-          }
-
-          const color = 'rgb(255, 59, 48)';
-
-          // Draw area fill
-          const gradient = ctx.createLinearGradient(0, paddingTop, 0, height - paddingBottom);
-          gradient.addColorStop(0, 'rgba(255, 59, 48, 0.2)');
-          gradient.addColorStop(1, 'rgba(255, 59, 48, 0)');
+          // Draw Day Grid and Labels
+          ctx.textAlign = 'center';
           
-          ctx.beginPath();
-          hrRecords.forEach((r, i) => {
-            const x = getX(hrTimestamps[i]);
-            const y = getY(r.heart_rate);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          });
-          const lastX = getX(hrTimestamps[hrTimestamps.length - 1]);
-          ctx.lineTo(lastX, height - paddingBottom);
-          ctx.lineTo(getX(hrTimestamps[0]), height - paddingBottom);
-          ctx.closePath();
-          ctx.fillStyle = gradient;
-          ctx.fill();
+          days.forEach((dayStr, index) => {
+             const dayStartX = paddingLeft + index * pixelsPerDay;
+             const dayCenterX = dayStartX + pixelsPerDay / 2;
+             
+             // Day Separator
+             ctx.beginPath();
+             ctx.moveTo(dayStartX, paddingTop);
+             ctx.lineTo(dayStartX, height - paddingBottom);
+             ctx.strokeStyle = '#E0E0E0';
+             ctx.lineWidth = 1;
+             ctx.stroke();
 
-          // Draw line
-          ctx.beginPath();
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 2;
-          ctx.lineJoin = 'round';
-          
-          hrRecords.forEach((r, i) => {
-            const x = getX(hrTimestamps[i]);
-            const y = getY(r.heart_rate);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+             // Noon Separator (Dashed)
+             const noonX = dayStartX + pixelsPerDay * 0.5;
+             ctx.beginPath();
+             ctx.setLineDash([4, 4]);
+             ctx.moveTo(noonX, paddingTop);
+             ctx.lineTo(noonX, height - paddingBottom);
+             ctx.strokeStyle = '#F0F0F0';
+             ctx.stroke();
+             ctx.setLineDash([]);
+
+             // Date Label (Bottom)
+             const [, month, day] = dayStr.split('-');
+             const dateLabel = `${month}/${day}`;
+             ctx.fillStyle = '#999999';
+             ctx.font = '11px sans-serif';
+             ctx.fillText(dateLabel, dayCenterX, height - 15);
+
+             // Morning/Evening Labels (Top of X-axis area)
+             ctx.fillStyle = '#666666';
+             ctx.font = '11px sans-serif';
+             ctx.fillText('早', dayStartX + pixelsPerDay * 0.25, height - 32);
+             ctx.fillText('晚', dayStartX + pixelsPerDay * 0.75, height - 32);
           });
+          
+          // Right Border
+          const finalX = paddingLeft + days.length * pixelsPerDay;
+          ctx.beginPath();
+          ctx.moveTo(finalX, paddingTop);
+          ctx.lineTo(finalX, height - paddingBottom);
+          ctx.strokeStyle = '#E0E0E0';
           ctx.stroke();
 
-          // Draw points with values
+          // Draw Data
+          const color = '#FFC107'; // Amber for Heart Rate
+
+          const hrPoints = hrRecords.map((r, i) => ({
+            x: getX(hrTimestamps[i]),
+            y: getY(r.heart_rate)
+          }));
+
+          // Smooth Line
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.lineJoin = 'round';
+          this.drawSmoothLine(ctx, hrPoints, 0.6);
+          ctx.stroke();
+
+          // Points
           hrRecords.forEach((r, i) => {
             const x = getX(hrTimestamps[i]);
             const y = getY(r.heart_rate);
+            const value = r.heart_rate;
+            const isAbnormal = value > 100 || value < 60;
             
-            // Outer circle (glow)
+            const pointColor = isAbnormal ? '#ff4d4f' : color;
+            
             ctx.beginPath();
-            ctx.arc(x, y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 59, 48, 0.3)';
+            ctx.arc(x, y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = pointColor;
             ctx.fill();
+            // ctx.lineWidth = 2;
+            // ctx.strokeStyle = pointColor;
+            // ctx.stroke();
             
-            // Inner circle
-            ctx.beginPath();
-            ctx.arc(x, y, 3, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            
-            ctx.beginPath();
-            ctx.arc(x, y, 3, 0, Math.PI * 2);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            
-            // Draw value label
+            // Label
             ctx.save();
-            ctx.fillStyle = color;
-            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = isAbnormal ? '#FF4D4F' : '#333333';
+            ctx.font = isAbnormal ? 'bold 12px sans-serif' : '12px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            
-            const text = r.heart_rate.toString();
-            const metrics = ctx.measureText(text);
-            const textWidth = metrics.width;
-            const textHeight = 12;
-            const padding = 3;
-            
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.fillRect(
-              x - textWidth / 2 - padding,
-              y - textHeight - padding - 8,
-              textWidth + padding * 2,
-              textHeight + padding * 2
-            );
-            
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(
-              x - textWidth / 2 - padding,
-              y - textHeight - padding - 8,
-              textWidth + padding * 2,
-              textHeight + padding * 2
-            );
-            
-            ctx.fillStyle = color;
-            ctx.fillText(text, x, y - 8);
+            ctx.fillText(value.toString(), x, y - 10);
             ctx.restore();
           });
-
-          // Draw X Axis Labels
-          ctx.fillStyle = '#52545c';
-          ctx.textAlign = 'center';
-          ctx.font = '11px sans-serif';
-          
-          const labelSteps = Math.min(8, hrRecords.length);
-          for (let i = 0; i <= labelSteps; i++) {
-            const idx = Math.floor((i / labelSteps) * (hrRecords.length - 1));
-            if (idx >= hrRecords.length) continue;
-            
-            const date = new Date(hrRecords[idx].measured_at);
-            const x = getX(hrTimestamps[idx]);
-            
-            const month = date.getMonth() + 1;
-            const day = date.getDate();
-            const hour = date.getHours().toString().padStart(2, '0');
-            const minute = date.getMinutes().toString().padStart(2, '0');
-            
-            ctx.fillText(`${month}/${day}`, x, height - paddingBottom + 15);
-            ctx.fillText(`${hour}:${minute}`, x, height - paddingBottom + 28);
-          }
 
           this.setData({
             scrollLeftHR: width

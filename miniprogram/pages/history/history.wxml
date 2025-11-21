@@ -10,35 +10,45 @@
     </view>
   </view>
 
-  <scroll-view scroll-y class="list-container">
+  <scroll-view scroll-y class="records-container">
     <block wx:if="{{records.length === 0}}">
       <view class="empty-state">
-        <text>暂无记录</text>
-        <button class="add-btn" bindtap="goToRecord">去记录</button>
+        <text class="empty-icon">📋</text>
+        <text class="empty-text">暂无记录</text>
+        <button class="add-btn" bindtap="goToRecord">开始记录</button>
       </view>
     </block>
     <block wx:else>
-      <view class="record-item" wx:for="{{records}}" wx:key="id" bindtap="showDetail" data-item="{{item}}">
-        <view class="record-main">
-          <view class="record-time">{{item.measuredAt}}</view>
-          <view class="record-values">
-            <view class="value-group">
-              <text class="label">高压</text>
-              <text class="value {{item.systolic > 140 || item.systolic < 90 ? 'warning' : ''}}">{{item.systolic}}</text>
-            </view>
-            <view class="divider">/</view>
-            <view class="value-group">
-              <text class="label">低压</text>
-              <text class="value {{item.diastolic > 90 || item.diastolic < 60 ? 'warning' : ''}}">{{item.diastolic}}</text>
-            </view>
-            <view class="value-group hr">
-              <text class="label">心率</text>
-              <text class="value">{{item.heartRate}}</text>
+      <view class="date-group" wx:for="{{records}}" wx:key="date">
+        <view class="date-header">{{item.date}}</view>
+        <view class="record-list">
+          <view class="record-card" wx:for="{{item.records}}" wx:key="id" wx:for-item="record" bindtap="showDetail" data-item="{{record}}">
+            <view class="level-indicator" style="background-color: {{record.hypertensionLevel.color}}"></view>
+            <view class="card-content">
+              <view class="card-header">
+                <text class="time">{{record.timeStr}}</text>
+                <view class="status-badge" wx:if="{{record.hypertensionLevel.level >= 0}}" style="background-color: {{record.hypertensionLevel.color}}20; color: {{record.hypertensionLevel.color}}">
+                  {{record.hypertensionLevel.text}}
+                </view>
+              </view>
+              <view class="card-body">
+                <view class="bp-group">
+                  <text class="bp-value">{{record.systolic}}/{{record.diastolic}}</text>
+                  <text class="bp-unit">mmHg</text>
+                </view>
+                <view class="hr-group">
+                  <text class="hr-value">{{record.heartRate}}</text>
+                  <text class="hr-label">心率</text>
+                </view>
+              </view>
+              <view class="card-footer" wx:if="{{(record.tags && record.tags.length > 0) || record.note}}">
+                <view class="tags" wx:if="{{record.tags && record.tags.length > 0}}">
+                  <text class="tag" wx:for="{{record.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+                </view>
+                <text class="note" wx:if="{{record.note}}">{{record.note}}</text>
+              </view>
             </view>
           </view>
-        </view>
-        <view class="record-tags" wx:if="{{item.tags && item.tags.length > 0}}">
-          <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
         </view>
       </view>
     </block>

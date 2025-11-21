@@ -55,8 +55,7 @@ const initDb = async () => {
         parsed_result JSONB,
         final_result JSONB,
         record_id INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(record_id) REFERENCES bp_records(id)
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     

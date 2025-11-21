@@ -1,35 +1,58 @@
 <view class="container">
   <view class="chart-container">
     <view class="chart-header">
-      <text class="chart-label">血压</text>
-    </view>
-    <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeft}}">
-      <canvas type="2d" id="trendChart" class="chart" style="width: {{canvasWidth}}px; height: 500rpx;"></canvas>
-    </scroll-view>
-    <view class="legend">
-      <view class="legend-item">
-        <view class="dot high"></view>
-        <text>收缩压</text>
+      <text class="chart-label">血压趋势</text>
+      <view class="legend-inline">
+        <view class="legend-item">
+          <view class="dot high"></view>
+          <text>收缩压</text>
+        </view>
+        <view class="legend-item">
+          <view class="dot low"></view>
+          <text>舒张压</text>
+        </view>
       </view>
-      <view class="legend-item">
-        <view class="dot low"></view>
-        <text>舒张压</text>
+    </view>
+    <view class="chart-body">
+      <canvas type="2d" id="yAxisBP" class="y-axis" style="width: 40px; height: 500rpx;"></canvas>
+      <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeft}}" bindscroll="handleBPScroll">
+        <canvas type="2d" id="trendChart" class="chart" style="width: {{canvasWidth}}px; height: 500rpx;"></canvas>
+      </scroll-view>
+    </view>
+    <view class="chart-footer">
+      <view class="legend-label">参考范围：</view>
+      <view class="legend-grid">
+        <view class="legend-item-small">
+          <view class="color-box normal"></view>
+          <text>正常</text>
+        </view>
+        <view class="legend-item-small">
+          <view class="color-box level1"></view>
+          <text>一级</text>
+        </view>
+        <view class="legend-item-small">
+          <view class="color-box level2"></view>
+          <text>危险</text>
+        </view>
       </view>
     </view>
   </view>
 
-  <view class="chart-container">
+  <view class="chart-container chart-compact">
     <view class="chart-header">
-      <text class="chart-label">心率</text>
-    </view>
-    <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeftHR}}">
-      <canvas type="2d" id="heartRateChart" class="chart" style="width: {{canvasWidthHR}}px; height: 400rpx;"></canvas>
-    </scroll-view>
-    <view class="legend">
-      <view class="legend-item">
-        <view class="dot heart-rate"></view>
-        <text>心率</text>
+      <text class="chart-label">心率趋势</text>
+      <view class="legend-inline">
+        <view class="legend-item">
+          <view class="dot heart-rate"></view>
+          <text>心率</text>
+        </view>
       </view>
+    </view>
+    <view class="chart-body">
+      <canvas type="2d" id="yAxisHR" class="y-axis" style="width: 40px; height: 400rpx;"></canvas>
+      <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeftHR}}" bindscroll="handleHRScroll">
+        <canvas type="2d" id="heartRateChart" class="chart" style="width: {{canvasWidthHR}}px; height: 400rpx;"></canvas>
+      </scroll-view>
     </view>
   </view>
 </view>

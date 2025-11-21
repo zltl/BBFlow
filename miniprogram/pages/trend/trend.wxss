@@ -7,25 +7,36 @@ page {
 }
 
 .container {
-  padding: 20rpx;
+  width: 100vw;
+  box-sizing: border-box;
+  padding: 20rpx 0;
   padding-bottom: 60rpx;
 }
 
 /* Chart Section - Grafana Light Theme */
 .chart-container {
+  width: 100%;
   background-color: #ffffff;
-  border-radius: 8rpx;
+  border-radius: 0;
   padding: 0;
   margin-bottom: 30rpx;
-  box-shadow: 0 0 2rpx rgba(24, 26, 27, 0.12);
-  border: 1rpx solid rgba(36, 41, 46, 0.12);
+  box-shadow: 0 2rpx 12rpx rgba(24, 26, 27, 0.08);
+  border-top: 1rpx solid rgba(36, 41, 46, 0.08);
+  border-bottom: 1rpx solid rgba(36, 41, 46, 0.08);
   overflow: hidden;
+}
+
+.chart-compact {
+  margin-top: 20rpx;
 }
 
 .chart-header {
   padding: 20rpx 30rpx;
   border-bottom: 1rpx solid rgba(36, 41, 46, 0.12);
   background-color: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .chart-label {
@@ -33,6 +44,11 @@ page {
   font-weight: 600;
   color: #18181b;
   letter-spacing: 0.5rpx;
+}
+
+.legend-inline {
+  display: flex;
+  gap: 24rpx;
 }
 
 .chart-title {
@@ -49,53 +65,105 @@ page {
   height: 520rpx;
   background-color: #ffffff;
   padding: 20rpx 0;
+  white-space: nowrap;
+  overflow-x: scroll;
 }
 
 .chart {
   height: 500rpx;
+  display: inline-block;
+  pointer-events: none; /* Let scroll gestures pass through to scroll-view */
 }
 
 .legend {
   display: flex;
-  justify-content: center;
-  padding: 20rpx;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  padding: 20rpx 30rpx;
   background-color: #fafafa;
-  border-top: 1rpx solid rgba(36, 41, 46, 0.08);
+  border-bottom: 1rpx solid rgba(36, 41, 46, 0.12);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  margin: 0 16rpx;
   font-size: 24rpx;
-  color: #52545c;
-  background-color: #ffffff;
-  padding: 8rpx 20rpx;
-  border-radius: 20rpx;
-  border: 1rpx solid rgba(36, 41, 46, 0.12);
-  box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.05);
+  color: #18181b;
+  font-weight: 500;
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+  border: none;
 }
 
 .dot {
-  width: 16rpx;
-  height: 16rpx;
+  width: 20rpx;
+  height: 20rpx;
   border-radius: 50%;
-  margin-right: 10rpx;
+  margin-right: 12rpx;
+  border: 2rpx solid #ffffff;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 .dot.high {
-  background-color: rgb(255, 152, 0);
-  color: rgb(255, 152, 0);
+  background-color: #FF6B6B;
+  color: #FF6B6B;
 }
 
 .dot.low {
-  background-color: rgb(54, 162, 235);
-  color: rgb(54, 162, 235);
+  background-color: #4D96FF;
+  color: #4D96FF;
 }
 
 .dot.heart-rate {
-  background-color: rgb(255, 59, 48);
-  color: rgb(255, 59, 48);
+  background-color: #FFC107;
+  color: #FFC107;
+}
+
+/* Chart Footer */
+.chart-footer {
+  padding: 16rpx 30rpx;
+  border-top: 1rpx solid rgba(36, 41, 46, 0.06);
+  background-color: #fafafa;
+  display: flex;
+  align-items: center;
+}
+
+.legend-label {
+  font-size: 22rpx;
+  color: #8c8c8c;
+  margin-right: 16rpx;
+}
+
+.legend-grid {
+  display: flex;
+  gap: 20rpx;
+}
+
+.legend-item-small {
+  display: flex;
+  align-items: center;
+  font-size: 20rpx;
+  color: #52545c;
+}
+
+.color-box {
+  width: 24rpx;
+  height: 12rpx;
+  margin-right: 8rpx;
+  border-radius: 2rpx;
+}
+
+.color-box.normal {
+  background-color: rgba(82, 196, 26, 0.4);
+}
+
+.color-box.level1 {
+  background-color: rgba(250, 173, 20, 0.4);
+}
+
+.color-box.level2 {
+  background-color: rgba(255, 77, 79, 0.4);
 }
 
 /* Stats Section */
@@ -142,4 +210,20 @@ page {
 
 .stat-value.highlight {
   color: #07c160;
+}
+
+.chart-body {
+  position: relative;
+  width: 100%;
+}
+
+.y-axis {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 40px;
+  background-color: transparent;
+  border-right: 1rpx solid rgba(36, 41, 46, 0.05);
+  z-index: 10;
+  pointer-events: none;
 }
