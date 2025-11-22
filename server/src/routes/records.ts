@@ -1,6 +1,7 @@
 import express, { Response } from 'express';
 import { pool } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { recordLimiter, historyLimiter } from '../middleware/rateLimit';
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // 获取记录列表
-router.get('/', async (req: AuthRequest, res: Response) => {
+router.get('/', historyLimiter, async (req: AuthRequest, res: Response) => {
   const openid = req.user?.openid;
   
   if (!openid) {
@@ -26,7 +27,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 });
 
 // 新增记录
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', recordLimiter, async (req: AuthRequest, res: Response) => {
   const openid = req.user?.openid;
   const { systolic, diastolic, heartRate, measuredAt, tags, note, ocrLogId } = req.body;
 
@@ -83,7 +84,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 });
 
 // 删除记录
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+router.delete('/:id', recordLimiter, async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const openid = req.user?.openid;
 

@@ -2,11 +2,12 @@ import express, { Request, Response } from 'express';
 import { pool } from '../db';
 import crypto from 'crypto';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { shareGenLimiter, shareViewLimiter } from '../middleware/rateLimit';
 
 const router = express.Router();
 
 // 生成分享 Token
-router.post('/generate-token', authenticateToken, async (req: AuthRequest, res: Response) => {
+router.post('/generate-token', authenticateToken, shareGenLimiter, async (req: AuthRequest, res: Response) => {
   const openid = req.user?.openid;
   const { timeRange, shareFutureData } = req.body;
 
@@ -113,7 +114,7 @@ async function getShareData(token: string, page: number = 1, pageSize: number = 
 }
 
 // 通过 Token 获取分享的数据 (JSON)
-router.get('/view/:token', async (req: Request, res: Response) => {
+router.get('/view/:token', shareViewLimiter, async (req: Request, res: Response) => {
   const { token } = req.params;
   const page = parseInt(req.query.page as string) || 1;
   const pageSize = parseInt(req.query.pageSize as string) || 20;
@@ -132,7 +133,7 @@ router.get('/view/:token', async (req: Request, res: Response) => {
 });
 
 // 通过 Token 获取分享的数据 (HTML)
-router.get('/html/:token', async (req: Request, res: Response) => {
+router.get('/html/:token', shareViewLimiter, async (req: Request, res: Response) => {
   const { token } = req.params;
 
   try {

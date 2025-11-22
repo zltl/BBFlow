@@ -50,12 +50,13 @@ const initDb = async () => {
     await client.query(`
       CREATE TABLE IF NOT EXISTS ocr_logs (
         id SERIAL PRIMARY KEY,
-        image_path TEXT NOT NULL,
-        ocr_raw_json JSONB,
-        parsed_result JSONB,
-        final_result JSONB,
-        record_id INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        user_id TEXT NOT NULL,
+        image_path TEXT,
+        raw_result TEXT,
+        parsed_result TEXT,
+        status TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(openid)
       );
     `);
 
@@ -66,13 +67,19 @@ const initDb = async () => {
         user_id TEXT NOT NULL,
         time_range TEXT NOT NULL,
         share_future_data BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(user_id) REFERENCES users(openid)
       );
     `);
-    
-    console.log('Database tables initialized');
+
+    // Add rate_limit_config column to users table
+    await client.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS rate_limit_config JSONB DEFAULT '{}';
+    `);
+
+    console.log('Database initialized successfully');
   } catch (err) {
     console.error('Error initializing database', err);
   } finally {

@@ -187,6 +187,16 @@ Page({
           },
           success(uploadRes) {
             wx.hideLoading();
+
+            if (uploadRes.statusCode === 429) {
+              wx.showToast({
+                title: '操作太频繁了，请稍后再试',
+                icon: 'none',
+                duration: 2000
+              });
+              return;
+            }
+
             try {
               const data = JSON.parse(uploadRes.data);
               if (data.success && data.data) {

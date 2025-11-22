@@ -21,6 +21,13 @@ export const request = <T>(options: WechatMiniprogram.RequestOption): Promise<T>
           // Optional: Redirect to login or show toast
           console.error('Unauthorized, token removed');
           reject(res);
+        } else if (res.statusCode === 429) {
+          wx.showToast({
+            title: '操作太频繁了，请稍后再试',
+            icon: 'none',
+            duration: 2000
+          });
+          reject(res);
         } else {
           console.error('Request failed:', res);
           reject(res);

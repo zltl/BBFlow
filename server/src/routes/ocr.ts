@@ -5,8 +5,13 @@ import { parseBPData } from '../utils/bpParser';
 import { uploadImageToOSS } from '../utils/oss';
 import { pool } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { recordLimiter } from '../middleware/rateLimit';
+import { RateLimitedQueue } from '../utils/rateLimiter';
 
 const router = express.Router();
+
+// Global OCR Rate Limiter: 10 QPS
+const ocrQueue = new RateLimitedQueue(10);
 
 // Apply middleware to all routes in this router
 router.use(authenticateToken);
@@ -19,7 +24,7 @@ const upload = multer({
   },
 });
 
-router.post('/recognize', upload.single('image'), async (req: AuthRequest, res: express.Response) => {
+router.post('/recognize', recordLimiter, upload.single('image'), async (req: AuthRequest, res: express.Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file provided' });
@@ -32,9 +37,12 @@ router.post('/recognize', upload.single('image'), async (req: AuthRequest, res: 
     const ossPath = await uploadImageToOSS(req.file.buffer, req.file.originalname);
     console.log(`[OCR] Image uploaded to OSS: ${ossPath}`);
 
-    // 2. Call Baidu OCR
-    console.log('[OCR] Calling Baidu OCR API...');
-    const wordsResult = await recognizeImage(req.file.buffer);
+    // 2. Call Baidu OCR (Rate Limited)
+    console.log('[OCR] Queuing Baidu OCR API call...');
+    const wordsResult = await ocrQueue.enqueue(() => {
+      console.log('[OCR] Executing Baidu OCR API call...');
+      return recognizeImage(req.file!.buffer);
+    });
     console.log('[OCR] Baidu OCR Raw Result:', JSON.stringify(wordsResult, null, 2));
     
     // 3. Parse Data
