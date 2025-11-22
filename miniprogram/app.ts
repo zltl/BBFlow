@@ -15,7 +15,7 @@ App<IAppOption>({
         console.log('wx.login code:', res.code)
         if (res.code) {
           // 发起网络请求
-          request<{ openid: string }>({
+          request<{ openid: string, token: string }>({
             url: '/auth/login',
             method: 'POST',
             data: {
@@ -24,6 +24,9 @@ App<IAppOption>({
           }).then(data => {
             console.log('Login success:', JSON.stringify(data));
             wx.setStorageSync('openid', data.openid);
+            if (data.token) {
+              wx.setStorageSync('token', data.token);
+            }
           }).catch(err => {
             console.error('Login failed:', err);
             // Fallback for offline/demo mode if server is not running

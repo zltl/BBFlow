@@ -58,6 +58,19 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // 分享 Token 表
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS share_tokens (
+        token TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        time_range TEXT NOT NULL,
+        share_future_data BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(openid)
+      );
+    `);
     
     console.log('Database tables initialized');
   } catch (err) {

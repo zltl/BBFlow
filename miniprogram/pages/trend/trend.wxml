@@ -1,7 +1,23 @@
 <view class="container">
   <view class="chart-container">
     <view class="chart-header">
-      <text class="chart-label">血压趋势</text>
+      <view class="header-left">
+        <text class="chart-label">血压趋势</text>
+        <view class="legend-mini">
+          <view class="legend-item-mini">
+            <view class="color-box-mini normal"></view>
+            <text>正常</text>
+          </view>
+          <view class="legend-item-mini">
+            <view class="color-box-mini level1"></view>
+            <text>一级</text>
+          </view>
+          <view class="legend-item-mini">
+            <view class="color-box-mini level2"></view>
+            <text>危险</text>
+          </view>
+        </view>
+      </view>
       <view class="legend-inline">
         <view class="legend-item">
           <view class="dot high"></view>
@@ -15,27 +31,28 @@
     </view>
     <view class="chart-body">
       <canvas type="2d" id="yAxisBP" class="y-axis" style="width: 40px; height: 500rpx;"></canvas>
-      <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeft}}" bindscroll="handleBPScroll">
-        <canvas type="2d" id="trendChart" class="chart" style="width: {{canvasWidth}}px; height: 500rpx;"></canvas>
+      <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeft}}" bindscroll="handleBPScroll" bindscrolltoupper="onScrollToLeft" upper-threshold="100">
+        <canvas type="2d" id="trendChart" class="chart" style="width: {{canvasWidth}}px; height: 500rpx;" bindlongpress="onChartLongPress" bindtouchend="onChartTouchEnd"></canvas>
       </scroll-view>
-    </view>
-    <view class="chart-footer">
-      <view class="legend-label">参考范围：</view>
-      <view class="legend-grid">
-        <view class="legend-item-small">
-          <view class="color-box normal"></view>
-          <text>正常</text>
+      
+      <!-- Tooltip -->
+      <view class="tooltip" wx:if="{{tooltip.visible}}" style="left: {{tooltip.x}}px; top: {{tooltip.y}}px;">
+        <view class="tooltip-date">{{tooltip.date}} {{tooltip.time}}</view>
+        <view class="tooltip-row">
+          <view class="dot high"></view>
+          <text>收缩压: {{tooltip.systolic}}</text>
         </view>
-        <view class="legend-item-small">
-          <view class="color-box level1"></view>
-          <text>一级</text>
+        <view class="tooltip-row">
+          <view class="dot low"></view>
+          <text>舒张压: {{tooltip.diastolic}}</text>
         </view>
-        <view class="legend-item-small">
-          <view class="color-box level2"></view>
-          <text>危险</text>
+        <view class="tooltip-row">
+          <view class="dot heart-rate"></view>
+          <text>心率: {{tooltip.heartRate}}</text>
         </view>
       </view>
     </view>
+    <!-- Footer removed as legend moved to header -->
   </view>
 
   <view class="chart-container chart-compact">

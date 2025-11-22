@@ -16,11 +16,13 @@
   "license": "MIT",
   "devDependencies": {
     "@types/ali-oss": "^6.16.13",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "miniprogram-api-typings": "^4.1.0",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "ali-oss": "^6.23.0"
+    "ali-oss": "^6.23.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }

@@ -4,8 +4,12 @@ import { recognizeImage } from '../utils/baiduOcr';
 import { parseBPData } from '../utils/bpParser';
 import { uploadImageToOSS } from '../utils/oss';
 import { pool } from '../db';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
+
+// Apply middleware to all routes in this router
+router.use(authenticateToken);
 
 // Configure multer for memory storage
 const upload = multer({
@@ -15,7 +19,7 @@ const upload = multer({
   },
 });
 
-router.post('/recognize', upload.single('image'), async (req, res) => {
+router.post('/recognize', upload.single('image'), async (req: AuthRequest, res: express.Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No image file provided' });

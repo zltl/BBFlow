@@ -6,12 +6,12 @@
       </view>
     </picker>
     <view class="stats" wx:if="{{records.length > 0}}">
-      共 {{records.length}} 条记录
+      <!-- 共 {{records.length}} 条记录 -->
     </view>
   </view>
 
-  <scroll-view scroll-y class="records-container">
-    <block wx:if="{{records.length === 0}}">
+  <scroll-view scroll-y class="records-container" bindscrolltolower="onReachBottom">
+    <block wx:if="{{records.length === 0 && !isLoading}}">
       <view class="empty-state">
         <text class="empty-icon">📋</text>
         <text class="empty-text">暂无记录</text>
@@ -23,33 +23,56 @@
         <view class="date-header">{{item.date}}</view>
         <view class="record-list">
           <view class="record-card" wx:for="{{item.records}}" wx:key="id" wx:for-item="record" bindtap="showDetail" data-item="{{record}}">
-            <view class="level-indicator" style="background-color: {{record.hypertensionLevel.color}}"></view>
-            <view class="card-content">
-              <view class="card-header">
-                <text class="time">{{record.timeStr}}</text>
-                <view class="status-badge" wx:if="{{record.hypertensionLevel.level >= 0}}" style="background-color: {{record.hypertensionLevel.color}}20; color: {{record.hypertensionLevel.color}}">
-                  {{record.hypertensionLevel.text}}
+            <view class="card-main">
+              <!-- Top Row: Time & Tags -->
+              <view class="card-top">
+                <view class="time-tag-group">
+                  <text class="time">{{record.timeStr}}</text>
+                  <text class="period-tag" wx:if="{{record.tags && record.tags.length > 0}}">{{record.tags[0]}}</text>
+                </view>
+                <view class="warning-group" wx:if="{{record.hypertensionLevel.level >= 2}}">
+                    <text class="warning-text" wx:if="{{record.hypertensionLevel.detail}}">{{record.hypertensionLevel.detail}}</text>
+                    <view class="warning-icon">⚠️</view>
                 </view>
               </view>
-              <view class="card-body">
-                <view class="bp-group">
+
+              <!-- Middle Row: BP & Status -->
+              <view class="card-middle">
+                <view class="bp-section">
                   <text class="bp-value">{{record.systolic}}/{{record.diastolic}}</text>
-                  <text class="bp-unit">mmHg</text>
+                  <!-- Unit removed as requested -->
                 </view>
-                <view class="hr-group">
-                  <text class="hr-value">{{record.heartRate}}</text>
-                  <text class="hr-label">心率</text>
+                <view class="status-section">
+                  <view class="status-badge" style="background-color: {{record.hypertensionLevel.color}}20; color: {{record.hypertensionLevel.color}}">
+                    {{record.hypertensionLevel.text}}
+                  </view>
+                  <view class="hr-item">
+                    <text class="hr-value">{{record.heartRate}}</text>
+                    <text class="hr-icon">❤️</text>
+                  </view>
                 </view>
               </view>
-              <view class="card-footer" wx:if="{{(record.tags && record.tags.length > 0) || record.note}}">
-                <view class="tags" wx:if="{{record.tags && record.tags.length > 0}}">
-                  <text class="tag" wx:for="{{record.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
-                </view>
-                <text class="note" wx:if="{{record.note}}">{{record.note}}</text>
+
+              <!-- Bottom Row: Notes (if any) -->
+              <view class="card-bottom" wx:if="{{record.note}}">
+                <text class="note-icon">📝</text>
+                <text class="note-text">{{record.note}}</text>
               </view>
+            </view>
+
+            <!-- Right Arrow -->
+            <view class="card-arrow">
+              <text class="arrow-icon">›</text>
             </view>
           </view>
         </view>
+      </view>
+      
+      <view class="loading-footer" wx:if="{{isLoading}}">
+        <text>加载中...</text>
+      </view>
+      <view class="loading-footer" wx:if="{{!hasMore && records.length > 0}}">
+        <text>没有更多记录了</text>
       </view>
     </block>
   </scroll-view>

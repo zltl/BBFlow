@@ -5,6 +5,7 @@ import config from './config';
 import authRoutes from './routes/auth';
 import recordRoutes from './routes/records';
 import ocrRoutes from './routes/ocr';
+import shareRoutes from './routes/share';
 import './db'; // Initialize DB
 
 const app = express();
@@ -29,6 +30,9 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/ocr', ocrRoutes);
+app.use('/api/share', shareRoutes);
+// Also mount share routes at root /share for cleaner HTML links
+app.use('/share', shareRoutes);
 
 // 基础健康检查
 app.get('/', (req, res) => {

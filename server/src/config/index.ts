@@ -17,6 +17,7 @@ export default {
     user: process.env.PG_USER || 'postgres',
     password: process.env.PG_PASSWORD || ''
   },
+  jwtSecret: process.env.JWT_SECRET || 'default_secret_key_for_dev',
   baidu: {
     apiKey: process.env.BAIDU_OCR_API_KEY || '',
     secretKey: process.env.BAIDU_OCR_SECRET_KEY || ''

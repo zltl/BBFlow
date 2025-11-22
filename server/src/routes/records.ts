@@ -1,11 +1,15 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { pool } from '../db';
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
 
+// Apply middleware to all routes in this router
+router.use(authenticateToken);
+
 // 获取记录列表
-router.get('/', async (req: Request, res: Response) => {
-  const { openid } = req.query; // 实际应从 token 中解析
+router.get('/', async (req: AuthRequest, res: Response) => {
+  const openid = req.user?.openid;
   
   if (!openid) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -22,8 +26,9 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // 新增记录
-router.post('/', async (req: Request, res: Response) => {
-  const { openid, systolic, diastolic, heartRate, measuredAt, tags, note, ocrLogId } = req.body;
+router.post('/', async (req: AuthRequest, res: Response) => {
+  const openid = req.user?.openid;
+  const { systolic, diastolic, heartRate, measuredAt, tags, note, ocrLogId } = req.body;
 
   if (!openid || !systolic || !diastolic) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -78,9 +83,13 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // 删除记录
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { openid } = req.query; // 简单的权限检查
+  const openid = req.user?.openid;
+
+  if (!openid) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const sql = `DELETE FROM bp_records WHERE id = $1 AND user_id = $2`;
   

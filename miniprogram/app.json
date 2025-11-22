@@ -3,6 +3,9 @@
     "pages/record/record",
     "pages/trend/trend",
     "pages/history/history",
+    "pages/share/share",
+    "pages/share-link/share-link",
+    "pages/viewer/viewer",
     "pages/logs/logs"
   ],
   "window": {
@@ -26,6 +29,10 @@
       {
         "pagePath": "pages/history/history",
         "text": "历史"
+      },
+      {
+        "pagePath": "pages/share/share",
+        "text": "分享"
       }
     ]
   },

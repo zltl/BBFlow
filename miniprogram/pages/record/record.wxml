@@ -1,62 +1,94 @@
 <view class="container">
+  <!-- OCR Section -->
   <view class="ocr-section">
     <view class="ocr-card" bindtap="onOCRScan">
-      <view class="ocr-icon">📷</view>
-      <view class="ocr-text">拍照智能识别</view>
-      <view class="ocr-subtext">自动识别屏幕读数</view>
+      <view class="ocr-content">
+        <view class="ocr-icon-wrapper">
+          <text class="ocr-icon">📷</text>
+        </view>
+        <view class="ocr-info">
+          <text class="ocr-title">扫码/拍照识别</text>
+          <text class="ocr-desc">一键录入，智能识别屏幕读数</text>
+        </view>
+        <view class="ocr-arrow">›</view>
+      </view>
     </view>
   </view>
 
   <form bindsubmit="saveRecord">
+    <!-- Blood Pressure & Heart Rate -->
     <view class="form-group">
       <view class="form-item">
-        <text class="label">收缩压 (高压)</text>
-        <input class="input" type="number" name="systolic" value="{{systolic}}" placeholder="70-260 mmHg" bindinput="onSystolicInput" />
+        <view class="label-group">
+            <text class="label-main">血压</text>
+            <text class="label-sub">mmHg</text>
+        </view>
+        <picker mode="multiSelector" range="{{bpRange}}" value="{{bpIndex}}" bindchange="onBPChange" class="picker-full" header-text="收缩压 | 舒张压">
+          <view class="picker-display {{systolic ? '' : 'placeholder'}}">
+            {{systolic}}/{{diastolic}}
+          </view>
+        </picker>
       </view>
       <view class="form-item">
-        <text class="label">舒张压 (低压)</text>
-        <input class="input" type="number" name="diastolic" value="{{diastolic}}" placeholder="40-150 mmHg" bindinput="onDiastolicInput" />
-      </view>
-      <view class="form-item">
-        <text class="label">心率</text>
-        <input class="input" type="number" name="heartRate" value="{{heartRate}}" placeholder="30-200 次/分" bindinput="onHeartRateInput" />
+        <view class="label-group">
+            <text class="label-main">心率</text>
+            <text class="label-sub">❤️</text>
+        </view>
+        <picker mode="selector" range="{{hrRange}}" value="{{hrIndex}}" bindchange="onHRChange" class="picker-full" header-text="心率">
+          <view class="picker-display {{heartRate ? '' : 'placeholder'}}">
+            {{heartRate}}
+          </view>
+        </picker>
       </view>
     </view>
 
+    <!-- Time -->
     <view class="form-group">
       <view class="form-item">
         <text class="label">测量时间</text>
-        <picker mode="date" value="{{date}}" bindchange="bindDateChange">
-          <view class="picker">
-            {{date}}
-          </view>
-        </picker>
-        <picker mode="time" value="{{time}}" bindchange="bindTimeChange">
-          <view class="picker" style="margin-left: 20rpx;">
-            {{time}}
-          </view>
-        </picker>
+        <view class="time-picker-group">
+          <picker mode="date" value="{{date}}" bindchange="bindDateChange">
+            <view class="picker-tag">
+              {{date}}
+            </view>
+          </picker>
+          <picker mode="time" value="{{time}}" bindchange="bindTimeChange">
+            <view class="picker-tag">
+              {{time}}
+            </view>
+          </picker>
+        </view>
       </view>
     </view>
 
+    <!-- Tags -->
     <view class="form-group">
-      <view class="section-title">标签</view>
+      <view class="section-header">
+        <text class="section-title">场景标签</text>
+      </view>
       <view class="tags-container">
         <block wx:for="{{tags}}" wx:key="*this">
           <view class="tag {{selectedTags[item] ? 'selected' : ''}}" bindtap="toggleTag" data-tag="{{item}}">
             {{item}}
           </view>
         </block>
+        <view class="tag add-tag" bindtap="addCustomTag">
+          + 自定义
+        </view>
       </view>
     </view>
 
+    <!-- Notes -->
     <view class="form-group">
-      <view class="section-title">备注</view>
-      <textarea class="textarea" name="note" placeholder="如有不适请备注（最多50字）" maxlength="50" bindinput="onNoteInput"></textarea>
+      <view class="section-header">
+        <text class="section-title">备注</text>
+      </view>
+      <textarea class="textarea" name="note" placeholder="如有不适请备注（最多50字）" maxlength="50" bindinput="onNoteInput" auto-height="{{false}}"></textarea>
     </view>
 
+    <!-- Submit Button -->
     <view class="btn-area">
-      <button type="primary" formType="submit">保存记录</button>
+      <button class="save-btn" formType="submit">保存记录</button>
     </view>
   </form>
 </view>

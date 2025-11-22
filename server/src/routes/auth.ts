@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import db from '../db';
 import config from '../config';
 
@@ -60,9 +61,12 @@ function handleLoginSuccess(res: Response, openid: string, userInfo: any) {
   db.query(query, [openid, userInfo?.nickName, userInfo?.avatarUrl])
     .catch(err => console.error('Error saving user:', err));
 
+  // Generate JWT
+  const token = jwt.sign({ openid }, config.jwtSecret, { expiresIn: '7d' });
+
   res.json({ 
     openid, 
-    token: 'mock_token_' + openid, // 实际项目中应生成 JWT
+    token,
     message: 'Login successful' 
   });
 }

@@ -5,13 +5,39 @@ Page({
     canvasWidth: 300,
     scrollLeft: 0,
     canvasWidthHR: 300,
-    scrollLeftHR: 0
+    scrollLeftHR: 0,
+    tooltip: {
+      visible: false,
+      x: 0,
+      y: 0,
+      date: '',
+      time: '',
+      systolic: 0,
+      diastolic: 0,
+      heartRate: 0
+    }
   },
 
   isSyncingScroll: false,
+  
+  // Pagination state
+  _allRecords: [] as any[],
+  _chartPoints: [] as any[],
+  _renderedCount: 0,
+  _isLoadingMore: false,
+  PAGE_SIZE: 30,
 
   onShow() {
     this.loadDataAndDraw();
+  },
+
+  calculateWidth(records: any[]) {
+    const days = Array.from(new Set(records.map(r => {
+        const d = new Date(r.measured_at);
+        return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    })));
+    const pixelsPerDay = 200;
+    return days.length * pixelsPerDay + 60;
   },
 
   async loadDataAndDraw() {
@@ -24,25 +50,62 @@ Page({
         method: 'GET'
       });
 
-      // 取最近 30 条记录，按时间升序排列（旧 -> 新）
+      // Sort by time (old -> new)
       const records = res.data
-        .sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
-        .slice(-30);
+        .sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
 
       if (records.length === 0) return;
 
-      // 统一计算时间轴范围（使用所有记录的时间戳）
-      const timestamps = records.map(r => new Date(r.measured_at).getTime());
-      const minTime = Math.min(...timestamps);
-      const maxTime = Math.max(...timestamps);
-      const timeRange = maxTime - minTime;
+      this._allRecords = records;
+      this._renderedCount = Math.min(this.PAGE_SIZE, records.length);
+      
+      const displayRecords = this._allRecords.slice(-this._renderedCount);
+      const width = this.calculateWidth(displayRecords);
 
-      this.drawChart(records, minTime, maxTime, timeRange);
-      this.drawHeartRateChart(records);
+      // Initial render: set width and scroll to end
+      this.setData({ 
+        canvasWidth: width,
+        canvasWidthHR: width, // Assuming same width for HR
+        scrollLeft: width,
+        scrollLeftHR: width
+      }, () => {
+        this.drawChart(displayRecords);
+        this.drawHeartRateChart(displayRecords);
+      });
 
     } catch (err) {
       console.error('Failed to load trend data', err);
     }
+  },
+
+  onScrollToLeft() {
+    if (this._isLoadingMore || this._renderedCount >= this._allRecords.length) return;
+    
+    this._isLoadingMore = true;
+    const oldWidth = this.data.canvasWidth;
+    
+    // Load more records
+    this._renderedCount = Math.min(this._renderedCount + this.PAGE_SIZE, this._allRecords.length);
+    const displayRecords = this._allRecords.slice(-this._renderedCount);
+    
+    const newWidth = this.calculateWidth(displayRecords);
+    const scrollDiff = newWidth - oldWidth;
+
+    // Update width and adjust scroll position to maintain visual stability
+    this.setData({
+      canvasWidth: newWidth,
+      canvasWidthHR: newWidth,
+      scrollLeft: this.data.scrollLeft + scrollDiff,
+      scrollLeftHR: this.data.scrollLeftHR + scrollDiff
+    }, () => {
+      this.drawChart(displayRecords);
+      this.drawHeartRateChart(displayRecords);
+      
+      // Small delay to prevent double triggering
+      setTimeout(() => {
+        this._isLoadingMore = false;
+      }, 500);
+    });
   },
 
   // Helper function to draw smooth curves using Catmull-Rom splines
@@ -110,7 +173,63 @@ Page({
     }, 100) as unknown as number;
   },
 
-  drawChart(records: any[], minTime: number, maxTime: number, timeRange: number) {
+  onChartLongPress(e: WechatMiniprogram.TouchEvent) {
+    if (!this._chartPoints || this._chartPoints.length === 0) return;
+    
+    const touch = e.touches[0] as any;
+    if (!touch) return;
+    
+    const { x } = touch;
+    
+    // Find nearest point
+    let minDist = Infinity;
+    let nearestPoint = null;
+    
+    for (const point of this._chartPoints) {
+      const dist = Math.abs(point.x - x);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestPoint = point;
+      }
+    }
+    
+    // Threshold for selection (e.g., 30px)
+    if (minDist > 30 || !nearestPoint) {
+      this.setData({ 'tooltip.visible': false });
+      return;
+    }
+    
+    const r = nearestPoint.record;
+    const d = new Date(r.measured_at);
+    const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+    const timeStr = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    
+    // Calculate tooltip position relative to the container
+    // The chart is inside a scroll-view which starts at left: 0 (overlapping with absolute Y-axis)
+    // point.x is relative to the canvas content (which includes paddingLeft for Y-axis)
+    // We need to subtract scrollLeft to get position relative to the scroll viewport
+    const tooltipX = nearestPoint.x - this.data.scrollLeft;
+    const tooltipY = nearestPoint.y; // Relative to canvas top, which aligns with container top
+    
+    this.setData({
+      tooltip: {
+        visible: true,
+        x: tooltipX,
+        y: tooltipY,
+        date: dateStr,
+        time: timeStr,
+        systolic: r.systolic,
+        diastolic: r.diastolic,
+        heartRate: r.heart_rate || '--'
+      }
+    });
+  },
+
+  onChartTouchEnd() {
+    this.setData({ 'tooltip.visible': false });
+  },
+
+  drawChart(records: any[]) {
     const sysInfo = wx.getSystemInfoSync();
     
     // Use shared time range for synchronization
@@ -125,31 +244,30 @@ Page({
     const pixelsPerDay = 200; // Fixed width per day
     const calculatedWidth = days.length * pixelsPerDay + 60; // Add buffer
 
-    this.setData({ canvasWidth: calculatedWidth }, () => {
-      const query = wx.createSelectorQuery();
-      query.select('#trendChart').fields({ node: true, size: true });
-      query.select('#yAxisBP').fields({ node: true, size: true });
-      
-      query.exec((res) => {
-          if (!res[0] || !res[1]) return;
-          
-          const canvas = res[0].node;
-          const ctx = canvas.getContext('2d');
-          const yAxisCanvas = res[1].node;
-          const yCtx = yAxisCanvas.getContext('2d');
+    const query = wx.createSelectorQuery();
+    query.select('#trendChart').fields({ node: true, size: true });
+    query.select('#yAxisBP').fields({ node: true, size: true });
+    
+    query.exec((res) => {
+        if (!res[0] || !res[1]) return;
+        
+        const canvas = res[0].node;
+        const ctx = canvas.getContext('2d');
+        const yAxisCanvas = res[1].node;
+        const yCtx = yAxisCanvas.getContext('2d');
 
-          const dpr = sysInfo.pixelRatio;
-          const width = calculatedWidth;
-          const height = res[0].height;
-          const yAxisWidth = res[1].width;
+        const dpr = sysInfo.pixelRatio;
+        const width = calculatedWidth;
+        const height = res[0].height;
+        const yAxisWidth = res[1].width;
 
-          canvas.width = width * dpr;
-          canvas.height = height * dpr;
-          ctx.scale(dpr, dpr);
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
 
-          yAxisCanvas.width = yAxisWidth * dpr;
-          yAxisCanvas.height = height * dpr;
-          yCtx.scale(dpr, dpr);
+        yAxisCanvas.width = yAxisWidth * dpr;
+        yAxisCanvas.height = height * dpr;
+        yCtx.scale(dpr, dpr);
 
           const paddingLeft = yAxisWidth + 10; // Ensure start of chart clears the Y-axis overlay
           const paddingRight = 20;
@@ -205,6 +323,16 @@ Page({
             
             return dayStartX + ratio * pixelsPerDay;
           };
+
+          // Store points for tooltip
+          this._chartPoints = records.map(r => {
+            const timestamp = new Date(r.measured_at).getTime();
+            return {
+              x: getX(timestamp),
+              y: getY(r.systolic), // Use systolic Y for tooltip vertical position or just for reference
+              record: r
+            };
+          });
 
           // Draw Hypertension Level Background Bands (Chinese standard)
           const hypertensionBands = [
@@ -315,7 +443,7 @@ Page({
             ctx.strokeStyle = color;
             ctx.lineWidth = 2.5; // Thicker line
             ctx.lineJoin = 'round';
-            this.drawSmoothLine(ctx, points, 0.6);
+            this.drawSmoothLine(ctx, points, 1);
             ctx.stroke();
 
             // Find min and max values
@@ -365,12 +493,8 @@ Page({
           drawLine('systolic', '#FF6B6B', 90, 140, 'top');
           drawLine('diastolic', '#4D96FF', 60, 90, 'bottom');
 
-          // Scroll to the end (rightmost)
-          this.setData({
-            scrollLeft: width
-          });
+          // Scroll logic moved to parent
         });
-    });
   },
 
   drawHeartRateChart(records: any[]) {
@@ -385,20 +509,19 @@ Page({
     const pixelsPerDay = 200; // Fixed width per day
     const calculatedWidth = days.length * pixelsPerDay + 60; // Add buffer
 
-    this.setData({ canvasWidthHR: calculatedWidth }, () => {
-      const query = wx.createSelectorQuery();
-      query.select('#heartRateChart').fields({ node: true, size: true });
-      query.select('#yAxisHR').fields({ node: true, size: true });
-      
-      query.exec((res) => {
-          if (!res[0] || !res[1]) return;
-          
-          const canvas = res[0].node;
-          const ctx = canvas.getContext('2d');
-          const yAxisCanvas = res[1].node;
-          const yCtx = yAxisCanvas.getContext('2d');
+    const query = wx.createSelectorQuery();
+    query.select('#heartRateChart').fields({ node: true, size: true });
+    query.select('#yAxisHR').fields({ node: true, size: true });
+    
+    query.exec((res) => {
+        if (!res[0] || !res[1]) return;
+        
+        const canvas = res[0].node;
+        const ctx = canvas.getContext('2d');
+        const yAxisCanvas = res[1].node;
+        const yCtx = yAxisCanvas.getContext('2d');
 
-          const dpr = sysInfo.pixelRatio;
+        const dpr = sysInfo.pixelRatio;
           const width = calculatedWidth;
           const height = res[0].height;
           const yAxisWidth = res[1].width;
@@ -552,7 +675,7 @@ Page({
           ctx.strokeStyle = color;
           ctx.lineWidth = 2.5;
           ctx.lineJoin = 'round';
-          this.drawSmoothLine(ctx, hrPoints, 0.6);
+          this.drawSmoothLine(ctx, hrPoints, 1);
           ctx.stroke();
 
           // Points
@@ -582,10 +705,7 @@ Page({
             ctx.restore();
           });
 
-          this.setData({
-            scrollLeftHR: width
-          });
+          // Scroll logic moved to parent
         });
-    });
   }
 });
