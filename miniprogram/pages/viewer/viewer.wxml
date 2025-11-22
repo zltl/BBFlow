@@ -1,0 +1,61 @@
+<view class="container">
+  <view class="loading-state" wx:if="{{isLoading}}">
+    <view class="loading-spinner"></view>
+    <text>正在加载分享数据...</text>
+  </view>
+
+  <view class="error-state" wx:elif="{{error}}">
+    <icon type="warn" size="64" color="#ff4d4f"/>
+    <text class="error-msg">{{error}}</text>
+    <button class="home-btn" bindtap="onGoHome">我也要用安压宝</button>
+  </view>
+
+  <view class="content" wx:else>
+    <view class="header">
+      <image class="avatar" src="{{owner.avatar_url || '/assets/default-avatar.png'}}" mode="aspectFill"></image>
+      <view class="info">
+        <text class="nickname">{{owner.nickname || '用户'}}的血压记录</text>
+        <text class="meta">有效期至: {{meta.expiresAt}}</text>
+      </view>
+    </view>
+
+    <view class="record-list">
+      <block wx:for="{{records}}" wx:key="measured_at">
+        <view class="record-card">
+          <view class="card-header">
+            <text class="date">{{item.measured_at}}</text>
+            <view class="tags">
+              <text class="tag" wx:for="{{item.tags}}" wx:key="*this" wx:for-item="tag">{{tag}}</text>
+            </view>
+          </view>
+          <view class="card-body">
+            <view class="metric">
+              <text class="label">收缩压</text>
+              <text class="value {{item.systolic >= 140 ? 'high' : ''}}">{{item.systolic}}</text>
+            </view>
+            <view class="divider"></view>
+            <view class="metric">
+              <text class="label">舒张压</text>
+              <text class="value {{item.diastolic >= 90 ? 'high' : ''}}">{{item.diastolic}}</text>
+            </view>
+            <view class="divider"></view>
+            <view class="metric">
+              <text class="label">心率</text>
+              <text class="value">{{item.heart_rate || '--'}}</text>
+            </view>
+          </view>
+          <view class="card-footer" wx:if="{{item.note}}">
+            <text class="note">备注: {{item.note}}</text>
+          </view>
+        </view>
+      </block>
+      <view class="empty-tip" wx:if="{{records.length === 0}}">
+        暂无符合条件的数据
+      </view>
+    </view>
+
+    <view class="footer-action">
+      <button class="home-btn" bindtap="onGoHome">我也要记录血压</button>
+    </view>
+  </view>
+</view>

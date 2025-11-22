@@ -1,0 +1,57 @@
+<view class="container">
+  <view class="header">
+    <text class="title">创建分享链接</text>
+    <text class="subtitle">生成链接发送给好友或医生，对方可查看您的血压数据</text>
+  </view>
+
+  <view class="form-group">
+    <view class="section-title">选择数据范围</view>
+    <radio-group bindchange="onRangeChange" class="radio-group">
+      <label class="radio-item">
+        <radio value="7" checked="{{timeRange === '7'}}" color="#1890ff"/>
+        <text>最近7天</text>
+      </label>
+      <label class="radio-item">
+        <radio value="30" checked="{{timeRange === '30'}}" color="#1890ff"/>
+        <text>最近30天</text>
+      </label>
+      <label class="radio-item">
+        <radio value="all" checked="{{timeRange === 'all'}}" color="#1890ff"/>
+        <text>全部历史数据</text>
+      </label>
+    </radio-group>
+  </view>
+
+  <view class="form-group">
+    <view class="section-title">高级选项</view>
+    <view class="switch-item">
+      <text>实时同步后续新数据</text>
+      <switch checked="{{shareFutureData}}" bindchange="onFutureDataChange" color="#1890ff"/>
+    </view>
+    <view class="tips">开启后，对方在链接有效期内也能看到您新录入的数据。</view>
+  </view>
+
+  <view class="action-area">
+    <button class="generate-btn" bindtap="generateLink" loading="{{isLoading}}" disabled="{{isLoading}}">
+      生成分享链接
+    </button>
+    
+    <view class="result-area" wx:if="{{shareLink}}">
+      <view class="success-tips">
+        <icon type="success" size="20" color="#52c41a"/>
+        <text>链接已生成，有效期至 {{expirationTime}}</text>
+      </view>
+      <button class="share-wx-btn" open-type="share">
+        发送给微信好友
+      </button>
+
+      <view class="link-box" wx:if="{{httpLink}}">
+        <view class="link-label">浏览器访问链接：</view>
+        <view class="link-content">
+          <text class="link-text">{{httpLink}}</text>
+        </view>
+        <button class="copy-btn" bindtap="copyLink">复制链接</button>
+      </view>
+    </view>
+  </view>
+</view>

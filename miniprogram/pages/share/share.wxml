@@ -1,0 +1,30 @@
+<view class="container">
+  <view class="header">
+    <text class="title">生成分享报告</text>
+    <text class="subtitle">选择时间范围，生成您的健康概览</text>
+  </view>
+
+  <view class="range-selector">
+    <view class="range-item {{timeRange === '7' ? 'active' : ''}}" bindtap="onRangeChange" data-range="7">
+      最近7天
+    </view>
+    <view class="range-item {{timeRange === '30' ? 'active' : ''}}" bindtap="onRangeChange" data-range="30">
+      最近30天
+    </view>
+  </view>
+
+  <view class="preview-area">
+    <canvas type="2d" id="shareCanvas" class="share-canvas" style="width: 300px; height: 550px;"></canvas>
+  </view>
+
+  <view class="action-area">
+    <view class="btn-group">
+      <button class="share-btn" open-type="share">微信好友分享</button>
+      <button class="save-btn" bindtap="onSaveImage">保存报告图片</button>
+    </view>
+    <navigator url="/pages/share-link/share-link" class="link-share-entry">
+      <text>创建实时数据分享链接 ›</text>
+    </navigator>
+    <view class="tips">保存后可发送给家人或医生</view>
+  </view>
+</view>

@@ -1,0 +1,155 @@
+.container {
+  min-height: 100vh;
+  background-color: #f4f5f5;
+  padding-bottom: 40rpx;
+}
+
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  gap: 30rpx;
+  color: #999;
+}
+
+.error-msg {
+  font-size: 32rpx;
+  color: #333;
+}
+
+.header {
+  background-color: #fff;
+  padding: 40rpx 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background-color: #eee;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+.nickname {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.meta {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.record-list {
+  padding: 0 30rpx;
+}
+
+.record-card {
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.05);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.date {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.tags {
+  display: flex;
+  gap: 10rpx;
+}
+
+.tag {
+  font-size: 20rpx;
+  color: #1890ff;
+  background-color: #e6f7ff;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.card-body {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.label {
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 8rpx;
+}
+
+.value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  font-family: 'DIN Alternate', sans-serif;
+}
+
+.value.high {
+  color: #ff4d4f;
+}
+
+.divider {
+  width: 1rpx;
+  height: 40rpx;
+  background-color: #eee;
+}
+
+.card-footer {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed #f0f0f0;
+}
+
+.note {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.empty-tip {
+  text-align: center;
+  color: #999;
+  padding: 60rpx 0;
+}
+
+.footer-action {
+  margin-top: 60rpx;
+  padding: 0 30rpx;
+}
+
+.home-btn {
+  background-color: #1890ff;
+  color: #fff;
+  border-radius: 44rpx;
+}

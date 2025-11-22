@@ -20,6 +20,7 @@ miniprogram/**/*.js.map
 # Build Artifacts (Server)
 server/dist/
 server/out/
+server/src/**/*.js
 coverage/
 
 # Editor

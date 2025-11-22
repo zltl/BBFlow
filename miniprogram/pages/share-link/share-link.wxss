@@ -1,0 +1,152 @@
+.container {
+  padding: 30rpx;
+  background-color: #f4f5f5;
+  min-height: 100vh;
+}
+
+.header {
+  margin-bottom: 40rpx;
+  text-align: center;
+}
+
+.title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.form-group {
+  background-color: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  color: #666;
+}
+
+.radio-item radio {
+  transform: scale(0.8);
+  margin-right: 10rpx;
+}
+
+.switch-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.tips {
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+.action-area {
+  margin-top: 60rpx;
+}
+
+.generate-btn {
+  background-color: #1890ff;
+  color: #fff;
+  font-size: 32rpx;
+  padding: 24rpx 0;
+  border-radius: 44rpx;
+  box-shadow: 0 6rpx 16rpx rgba(24, 144, 255, 0.3);
+}
+
+.result-area {
+  margin-top: 40rpx;
+  animation: fadeIn 0.5s ease;
+}
+
+.success-tips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  margin-bottom: 30rpx;
+  font-size: 26rpx;
+  color: #52c41a;
+}
+
+.share-wx-btn {
+  background-color: #52c41a;
+  color: #fff;
+  font-size: 32rpx;
+  padding: 24rpx 0;
+  border-radius: 44rpx;
+  box-shadow: 0 6rpx 16rpx rgba(82, 196, 26, 0.3);
+}
+
+.link-box {
+  background-color: #fff;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  margin-top: 30rpx;
+  border: 2rpx dashed #e8e8e8;
+}
+
+.link-label {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+}
+
+.link-content {
+  background: #f9f9f9;
+  padding: 20rpx;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+  word-break: break-all;
+}
+
+.link-text {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.4;
+}
+
+.copy-btn {
+  background-color: #fff !important;
+  color: #1890ff !important;
+  border: 2rpx solid #1890ff !important;
+  font-size: 28rpx;
+  border-radius: 40rpx;
+  width: 200rpx !important;
+  padding: 10rpx 0;
+  font-weight: normal;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
