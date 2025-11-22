@@ -6,20 +6,23 @@
 }
 
 .header {
-  padding: 20rpx;
+  padding: 10rpx 20rpx;
   background-color: #fff;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start; /* Align to left */
   align-items: center;
   border-bottom: 1rpx solid #eee;
 }
 
 .filter-btn {
-  font-size: 30rpx;
+  font-size: 28rpx; /* Slightly smaller font for compactness */
   color: #333;
-  padding: 10rpx 20rpx;
-  background-color: #f0f0f0;
+  padding: 8rpx 24rpx;
+  background-color: #f5f5f5;
   border-radius: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
 }
 
 .stats {
@@ -92,18 +95,20 @@
 }
 
 .time {
-  font-size: 32rpx;
+  font-size: 40rpx; /* Increased from 32rpx */
   font-weight: 600;
   color: #333;
   font-family: 'DIN Alternate', sans-serif;
+  margin-right: 8rpx;
 }
 
 .period-tag {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #666;
   background-color: #f0f0f0;
-  padding: 4rpx 12rpx;
+  padding: 2rpx 10rpx;
   border-radius: 8rpx;
+  vertical-align: middle;
 }
 
 .warning-group {
