@@ -1,0 +1,35 @@
+.container {
+  padding: 30rpx;
+  padding-bottom: 80rpx; /* Added bottom padding */
+  background-color: #fff;
+  min-height: 100vh;
+}
+
+.section {
+  margin-bottom: 20rpx;
+}
+
+.title {
+  font-size: 34rpx; /* Increased font size */
+  font-weight: bold;
+  color: #1890ff; /* Changed to blue */
+  margin-bottom: 12rpx;
+  padding-left: 20rpx;
+  border-left: 8rpx solid #1890ff;
+}
+
+.content {
+  padding-left: 28rpx;
+}
+
+.item {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 10rpx;
+}
+
+.highlight {
+  font-weight: bold;
+  color: #1890ff;
+}

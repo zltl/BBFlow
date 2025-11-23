@@ -122,6 +122,12 @@ Page({
     });
   },
 
+  goToGuide() {
+    wx.navigateTo({
+      url: '/pages/guide/guide'
+    });
+  },
+
   checkFirstUse() {
     const hasShownGuide = wx.getStorageSync('has_shown_guide');
     if (!hasShownGuide) {

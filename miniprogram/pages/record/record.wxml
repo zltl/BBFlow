@@ -15,6 +15,13 @@
     </view>
   </view>
 
+  <view class="guide-link-container">
+    <view class="guide-link" bindtap="goToGuide">
+      <text class="guide-icon">📖</text>
+      <text>如何正确测量血压？</text>
+    </view>
+  </view>
+
   <form bindsubmit="saveRecord">
     <!-- Blood Pressure & Heart Rate -->
     <view class="form-group">

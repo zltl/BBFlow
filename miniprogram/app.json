@@ -6,6 +6,7 @@
     "pages/share/share",
     "pages/share-link/share-link",
     "pages/viewer/viewer",
+    "pages/guide/guide",
     "pages/logs/logs"
   ],
   "window": {

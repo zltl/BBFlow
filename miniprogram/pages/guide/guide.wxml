@@ -1,0 +1,36 @@
+<view class="container">
+  <view class="section">
+    <view class="title">1. 测量前准备</view>
+    <view class="content">
+      <view class="item">• 测量前<text class="highlight">30分钟</text>内禁止吸烟、饮咖啡或茶。</view>
+      <view class="item">• 排空膀胱，静坐休息至少<text class="highlight">5分钟</text>。</view>
+      <view class="item">• 保持心情平静，避免剧烈运动。</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="title">2. 正确姿势</view>
+    <view class="content">
+      <view class="item">• 身体坐直，双脚平放在地板上，不要交叉双腿。</view>
+      <view class="item">• 背部靠在椅背上，手臂放在桌子上，手心向上。</view>
+      <view class="item">• 绑带（袖带）的高度应与<text class="highlight">心脏保持同一水平</text>。</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="title">3. 测量过程</view>
+    <view class="content">
+      <view class="item">• 绑带松紧度以能插入<text class="highlight">1-2根手指</text>为宜。</view>
+      <view class="item">• 测量过程中不要说话或移动身体。</view>
+      <view class="item">• 建议测量<text class="highlight">2-3次</text>，每次间隔<text class="highlight">1-2分钟</text>，取平均值。</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="title">4. 最佳测量时间</view>
+    <view class="content">
+      <view class="item">• 早上：起床后<text class="highlight">1小时内</text>，服用降压药前，早餐前。</view>
+      <view class="item">• 晚上：睡觉前。</view>
+    </view>
+  </view>
+</view>
