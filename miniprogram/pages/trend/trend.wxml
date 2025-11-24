@@ -18,14 +18,22 @@
           </view>
         </view>
       </view>
-      <view class="legend-inline">
-        <view class="legend-item">
-          <view class="dot high"></view>
-          <text>收缩压</text>
+      <view class="header-right">
+        <view class="auto-avg-switch" bindtap="toggleAutoAverage">
+          <text class="switch-label">自动均值</text>
+          <view class="switch-icon {{autoAverage ? 'active' : ''}}">
+            <view class="switch-circle"></view>
+          </view>
         </view>
-        <view class="legend-item">
-          <view class="dot low"></view>
-          <text>舒张压</text>
+        <view class="legend-inline">
+          <view class="legend-item">
+            <view class="dot high"></view>
+            <text>收缩压</text>
+          </view>
+          <view class="legend-item">
+            <view class="dot low"></view>
+            <text>舒张压</text>
+          </view>
         </view>
       </view>
     </view>

@@ -6,6 +6,7 @@ Page({
     scrollLeft: 0,
     canvasWidthHR: 300,
     scrollLeftHR: 0,
+    autoAverage: true,
     tooltip: {
       visible: false,
       x: 0,
@@ -28,7 +29,63 @@ Page({
   PAGE_SIZE: 30,
 
   onShow() {
+    const storageValue = wx.getStorageSync('autoAverage');
+    const autoAverage = storageValue === '' ? true : storageValue;
+    this.setData({ autoAverage });
     this.loadDataAndDraw();
+  },
+
+  toggleAutoAverage() {
+    const newValue = !this.data.autoAverage;
+    this.setData({ autoAverage: newValue });
+    wx.setStorageSync('autoAverage', newValue);
+    this.loadDataAndDraw();
+  },
+
+  mergeRecordsByTimeWindow(records: any[], windowHours: number = 2): any[] {
+    if (!this.data.autoAverage || records.length === 0) return records;
+
+    const windowMs = windowHours * 60 * 60 * 1000;
+    const merged: any[] = [];
+    let currentGroup: any[] = [];
+
+    records.forEach((record, index) => {
+      if (currentGroup.length === 0) {
+        currentGroup.push(record);
+      } else {
+        const lastTime = new Date(currentGroup[0].measured_at).getTime();
+        const currentTime = new Date(record.measured_at).getTime();
+        
+        if (Math.abs(currentTime - lastTime) <= windowMs) {
+          currentGroup.push(record);
+        } else {
+          merged.push(this.averageGroup(currentGroup));
+          currentGroup = [record];
+        }
+      }
+
+      if (index === records.length - 1 && currentGroup.length > 0) {
+        merged.push(this.averageGroup(currentGroup));
+      }
+    });
+
+    return merged;
+  },
+
+  averageGroup(group: any[]): any {
+    if (group.length === 1) return group[0];
+
+    const avgSystolic = Math.round(group.reduce((sum, r) => sum + r.systolic, 0) / group.length);
+    const avgDiastolic = Math.round(group.reduce((sum, r) => sum + r.diastolic, 0) / group.length);
+    const avgHeartRate = Math.round(group.reduce((sum, r) => sum + (r.heart_rate || 0), 0) / group.length);
+
+    return {
+      ...group[0],
+      systolic: avgSystolic,
+      diastolic: avgDiastolic,
+      heart_rate: avgHeartRate,
+      _mergedCount: group.length
+    };
   },
 
   calculateWidth(records: any[]) {
@@ -51,10 +108,13 @@ Page({
       });
 
       // Sort by time (old -> new)
-      const records = res.data
+      let records = res.data
         .sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
 
       if (records.length === 0) return;
+
+      // Apply auto-average if enabled
+      records = this.mergeRecordsByTimeWindow(records, 2);
 
       this._allRecords = records;
       this._renderedCount = Math.min(this.PAGE_SIZE, records.length);

@@ -9,9 +9,10 @@
   padding: 10rpx 20rpx;
   background-color: #fff;
   display: flex;
-  justify-content: flex-start; /* Align to left */
+  justify-content: space-between;
   align-items: center;
   border-bottom: 1rpx solid #eee;
+  gap: 20rpx;
 }
 
 .filter-btn {
@@ -28,6 +29,54 @@
 .stats {
   font-size: 28rpx;
   color: #999;
+}
+
+.auto-avg-switch {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.switch-label {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.switch-icon {
+  width: 80rpx;
+  height: 40rpx;
+  background-color: #e0e0e0;
+  border-radius: 40rpx;
+  position: relative;
+  transition: background-color 0.3s;
+}
+
+.switch-icon.active {
+  background-color: #1890ff;
+}
+
+.switch-circle {
+  width: 32rpx;
+  height: 32rpx;
+  background-color: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  transition: left 0.3s;
+}
+
+.switch-icon.active .switch-circle {
+  left: 44rpx;
+}
+
+.merged-badge {
+  font-size: 20rpx;
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  margin-left: 8rpx;
 }
 
 .records-container {

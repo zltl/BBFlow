@@ -36,7 +36,16 @@ page {
   background-color: #fafafa;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12rpx;
 }
 
 .chart-label {
@@ -49,6 +58,45 @@ page {
 .legend-inline {
   display: flex;
   gap: 24rpx;
+}
+
+.auto-avg-switch {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.switch-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.switch-icon {
+  width: 80rpx;
+  height: 40rpx;
+  background-color: #e0e0e0;
+  border-radius: 40rpx;
+  position: relative;
+  transition: background-color 0.3s;
+}
+
+.switch-icon.active {
+  background-color: #1890ff;
+}
+
+.switch-circle {
+  width: 32rpx;
+  height: 32rpx;
+  background-color: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 4rpx;
+  left: 4rpx;
+  transition: left 0.3s;
+}
+
+.switch-icon.active .switch-circle {
+  left: 44rpx;
 }
 
 .chart-title {

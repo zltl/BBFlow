@@ -5,8 +5,11 @@
         {{filterDate || '全部日期'}} <text class="arrow">▼</text>
       </view>
     </picker>
-    <view class="stats" wx:if="{{records.length > 0}}">
-      <!-- 共 {{records.length}} 条记录 -->
+    <view class="auto-avg-switch" bindtap="toggleAutoAverage">
+      <text class="switch-label">自动均值</text>
+      <view class="switch-icon {{autoAverage ? 'active' : ''}}">
+        <view class="switch-circle"></view>
+      </view>
     </view>
   </view>
 
@@ -29,6 +32,7 @@
                 <view class="time-tag-group">
                   <text class="time">{{record.timeStr}}</text>
                   <text class="period-tag" wx:if="{{record.tags && record.tags.length > 0}}">{{record.tags[0]}}</text>
+                  <text class="merged-badge" wx:if="{{record._mergedCount > 1}}">平均({{record._mergedCount}})</text>
                 </view>
                 <view class="warning-group" wx:if="{{record.hypertensionLevel.level >= 2}}">
                     <text class="warning-text" wx:if="{{record.hypertensionLevel.detail}}">{{record.hypertensionLevel.detail}}</text>
