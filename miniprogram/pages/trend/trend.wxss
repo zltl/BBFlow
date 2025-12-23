@@ -6,6 +6,12 @@ page {
     sans-serif;
 }
 
+.page-scroll {
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
 .container {
   width: 100vw;
   box-sizing: border-box;
@@ -24,6 +30,8 @@ page {
   border-top: 1rpx solid rgba(36, 41, 46, 0.08);
   border-bottom: 1rpx solid rgba(36, 41, 46, 0.08);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .chart-compact {
@@ -361,4 +369,659 @@ page {
   border-right: 1rpx solid rgba(36, 41, 46, 0.05);
   z-index: 10;
   pointer-events: none;
+}
+
+/* ========== History Section Styles ========== */
+.history-section {
+  width: 100%;
+  padding: 0;
+  margin-top: 40rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.section-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18rpx 30rpx;
+  background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-radius: 0;
+  margin: 0;
+  box-shadow: none;
+  border-bottom: 1rpx solid #f0f0f0;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.filter-btn {
+  font-size: 26rpx;
+  color: #333;
+  padding: 10rpx 22rpx;
+  background-color: #f5f5f5;
+  border-radius: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.arrow {
+  font-size: 20rpx;
+  color: #999;
+}
+
+/* Date Group */
+.date-group {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.date-header {
+  width: 100%;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #666;
+  padding: 16rpx 30rpx 12rpx;
+  position: sticky;
+  top: 80rpx;
+  background-color: #f8f8f8;
+  margin: 0;
+  border-top: 1rpx solid #f0f0f0;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.record-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+/* Record Card */
+.record-card {
+  width: 100%;
+  background: #fff;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  padding: 24rpx 30rpx;
+  box-shadow: none;
+  border-bottom: 1rpx solid #f0f0f0;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.record-card:active {
+  transform: scale(0.99);
+  background-color: #fafafa;
+}
+
+.card-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.time-tag-group {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.time {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  font-family: 'DIN Alternate', sans-serif;
+}
+
+.period-tag {
+  font-size: 22rpx;
+  color: #666;
+  background-color: #f0f0f0;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+}
+
+.merged-badge {
+  font-size: 20rpx;
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+}
+
+.warning-group {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.warning-text {
+  font-size: 22rpx;
+  color: #ff4d4f;
+}
+
+.warning-icon {
+  font-size: 28rpx;
+}
+
+.card-middle {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.bp-section {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.bp-value {
+  font-size: 52rpx;
+  font-weight: 700;
+  color: #333;
+  font-family: 'DIN Alternate', sans-serif;
+  line-height: 1;
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.status-badge {
+  font-size: 22rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 30rpx;
+  font-weight: 500;
+}
+
+.hr-item {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.hr-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  font-family: 'DIN Alternate', sans-serif;
+}
+
+.hr-icon {
+  font-size: 22rpx;
+}
+
+.card-bottom {
+  display: flex;
+  align-items: flex-start;
+  gap: 8rpx;
+  padding-top: 10rpx;
+  border-top: 1rpx solid #f5f5f5;
+}
+
+.note-icon {
+  font-size: 22rpx;
+  margin-top: 2rpx;
+}
+
+.note-text {
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.card-arrow {
+  padding-left: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrow-icon {
+  font-size: 36rpx;
+  color: #ccc;
+  font-weight: 300;
+}
+
+/* Empty State & Footer */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 0;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 60rpx;
+  margin-bottom: 16rpx;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 28rpx;
+}
+
+.loading-footer {
+  text-align: center;
+  padding: 30rpx;
+  color: #999;
+  font-size: 24rpx;
+}
+
+/* ========== View Toggle Styles ========== */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.view-toggle {
+  display: flex;
+  background-color: #f5f5f5;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.toggle-btn {
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  color: #666;
+  background-color: transparent;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+/* ========== A4 Table View Styles ========== */
+.a4-table-container {
+  width: 100%;
+  background-color: #fff;
+  padding: 30rpx 20rpx;
+  box-sizing: border-box;
+}
+
+.a4-table-header {
+  text-align: center;
+  margin-bottom: 30rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx solid #333;
+}
+
+.a4-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.a4-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.a4-table {
+  width: 100%;
+  border: 1rpx solid #333;
+  border-collapse: collapse;
+}
+
+.table-row {
+  display: flex;
+  width: 100%;
+  border-bottom: 1rpx solid #ccc;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-header-row {
+  background-color: #f0f0f0;
+  border-bottom: 2rpx solid #333;
+}
+
+.table-header-row .table-cell {
+  font-weight: bold;
+  color: #333;
+}
+
+.table-cell {
+  padding: 16rpx 8rpx;
+  font-size: 22rpx;
+  color: #333;
+  text-align: center;
+  border-right: 1rpx solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-all;
+}
+
+.table-cell:last-child {
+  border-right: none;
+}
+
+.cell-date {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.cell-time {
+  flex: 0.8;
+  min-width: 0;
+}
+
+.cell-systolic {
+  flex: 0.8;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.cell-diastolic {
+  flex: 0.8;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.cell-heartrate {
+  flex: 0.6;
+  min-width: 0;
+}
+
+.cell-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 20rpx;
+}
+
+.cell-note {
+  flex: 1.5;
+  min-width: 0;
+  font-size: 20rpx;
+  color: #666;
+}
+
+.a4-table-footer {
+  text-align: right;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #ccc;
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* ========== Inline Table View Styles ========== */
+.table-view-container {
+  width: 100%;
+  background-color: #fff;
+  padding: 0;
+}
+
+.table-scroll {
+  width: 100%;
+}
+
+.bp-table {
+  width: 100%;
+  min-width: 600rpx;
+  border: 1rpx solid #e0e0e0;
+}
+
+.bp-table .table-row {
+  display: flex;
+  width: 100%;
+  border-bottom: 1rpx solid #e0e0e0;
+}
+
+.bp-table .table-row:last-child {
+  border-bottom: none;
+}
+
+.bp-table .table-header-row {
+  background-color: #f5f5f5;
+  border-bottom: 2rpx solid #333;
+}
+
+.bp-table .table-header-row .table-cell {
+  font-weight: bold;
+  color: #333;
+  font-size: 24rpx;
+}
+
+.bp-table .table-cell {
+  padding: 20rpx 12rpx;
+  font-size: 26rpx;
+  color: #333;
+  text-align: center;
+  border-right: 1rpx solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bp-table .table-cell:last-child {
+  border-right: none;
+}
+
+.bp-table .cell-date {
+  flex: 1.2;
+  min-width: 120rpx;
+}
+
+.bp-table .cell-time {
+  flex: 0.8;
+  min-width: 80rpx;
+}
+
+.bp-table .cell-systolic {
+  flex: 0.9;
+  min-width: 90rpx;
+  font-weight: 600;
+}
+
+.bp-table .cell-diastolic {
+  flex: 0.9;
+  min-width: 90rpx;
+  font-weight: 600;
+}
+
+.bp-table .cell-heartrate {
+  flex: 0.7;
+  min-width: 70rpx;
+}
+
+.bp-table .cell-status {
+  flex: 1.2;
+  min-width: 120rpx;
+  font-size: 22rpx;
+}
+
+.bp-table .table-cell.abnormal {
+  color: #ff4d4f;
+  font-weight: bold;
+}
+
+.table-footer {
+  text-align: center;
+  padding: 20rpx;
+  font-size: 24rpx;
+  color: #999;
+  background-color: #fafafa;
+  border-top: 1rpx solid #e0e0e0;
+}
+
+/* ========== Daily Table View Styles ========== */
+.bp-table-daily {
+  display: inline-block;
+  border-radius: 8rpx;
+  overflow: visible;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  background-color: #fff;
+  border: 1rpx solid #dfe1e6;
+  min-width: 100%;
+}
+
+.table-header-top,
+.table-header-sub,
+.table-data-row {
+  display: flex;
+  width: max-content;
+}
+
+/* Main Header */
+.table-header-top {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.table-header-top .header-cell {
+  padding: 16rpx 4rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  border-right: 1rpx solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Sub Header */
+.table-header-sub {
+  background-color: #e6f7ff;
+  border-bottom: 2rpx solid #1890ff;
+}
+
+.table-header-sub .header-cell {
+  padding: 12rpx 4rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #1890ff;
+  text-align: center;
+  border-right: 1rpx solid #b3d8ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Data Rows */
+.table-data-row {
+  border-bottom: 1rpx solid #ebecf0;
+}
+
+.table-data-row:last-child {
+  border-bottom: none;
+}
+
+.table-data-row:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.table-data-row .data-cell {
+  padding: 16rpx 4rpx;
+  font-size: 26rpx;
+  color: #172b4d;
+  text-align: center;
+  border-right: 1rpx solid #ebecf0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Sticky Date Column */
+.cell-date {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  width: 100rpx;
+  min-width: 100rpx;
+  max-width: 100rpx;
+  border-right: 2rpx solid #dfe1e6 !important;
+  background-color: #fff;
+}
+
+.table-data-row:nth-child(even) .cell-date {
+  background-color: #fafbfc;
+}
+
+.table-header-top .cell-date {
+  background-color: #1890ff;
+  z-index: 12;
+}
+
+.table-header-sub .cell-date {
+  background-color: #e6f7ff;
+  z-index: 12;
+  border-right: 2rpx solid #1890ff !important;
+}
+
+/* Column Widths */
+.cell-item {
+  width: 80rpx;
+  min-width: 80rpx;
+  max-width: 80rpx;
+}
+
+/* Group Separators */
+.table-header-top .cell-item:nth-child(4),
+.table-header-sub .cell-item:nth-child(4),
+.table-data-row .cell-item:nth-child(4),
+.table-header-top .cell-item:nth-child(7),
+.table-header-sub .cell-item:nth-child(7),
+.table-data-row .cell-item:nth-child(7) {
+  border-right: 2rpx solid #dfe1e6 !important;
+}
+
+.table-header-top .cell-item:last-child,
+.table-header-sub .cell-item:last-child,
+.table-data-row .cell-item:last-child {
+  border-right: none !important;
+}
+
+/* Abnormal Values */
+.data-cell.abnormal {
+  color: #de350b;
+  font-weight: bold;
+  background-color: #ffebe6;
+}
+
+.table-footer {
+  text-align: center;
+  padding: 24rpx;
+  font-size: 24rpx;
+  color: #6b778c;
+  background-color: #f4f5f7;
+  border-top: 1rpx solid #dfe1e6;
 }

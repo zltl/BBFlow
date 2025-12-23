@@ -1,0 +1,30 @@
+<view class="container">
+  <view class="header">
+    <text class="title">血压记录表 (A4)</text>
+    <text class="subtitle">生成标准表格，方便打印就医</text>
+  </view>
+
+  <view class="preview-scroll">
+    <view class="preview-area">
+      <canvas type="2d" id="a4Canvas" class="a4-canvas" style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;"></canvas>
+    </view>
+  </view>
+
+  <view class="action-area">
+    <view class="btn-row">
+      <button class="action-btn save" bindtap="onSaveImage">
+        <text class="btn-icon">💾</text>
+        <text>保存图片</text>
+      </button>
+      <button class="action-btn share" bindtap="onShareImage">
+        <text class="btn-icon">📤</text>
+        <text>分享</text>
+      </button>
+      <button class="action-btn print" bindtap="onPrint">
+        <text class="btn-icon">🖨️</text>
+        <text>打印</text>
+      </button>
+    </view>
+    <view class="tips">提示：图片为A4比例，可直接打印</view>
+  </view>
+</view>

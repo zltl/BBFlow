@@ -14,9 +14,11 @@ Page({
       totalCount: 0,
       interpretation: ''
     },
+    tableData: [] as any[],
     canvasWidth: 300,
     canvasHeight: 550,
-    isGenerating: false
+    isGenerating: false,
+    tempFilePath: '' as string
   },
 
   onLoad() {
@@ -57,7 +59,32 @@ Page({
         .sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
 
       this.calculateStats(records);
-      this.drawShareImage(records);
+      
+      // Process table data
+      const tableData = this.processTableData(records);
+      
+      // Calculate required canvas height
+      // Header area: ~110px (Margins 20 + Title 30 + Header 60)
+      // Rows: tableData.length * 30
+      // Footer area: ~40px
+      const rowHeight = 30;
+      const headerHeight = 110;
+      const footerHeight = 40;
+      const totalHeight = headerHeight + (tableData.length * rowHeight) + footerHeight;
+      
+      const sysInfo = wx.getSystemInfoSync();
+      const canvasWidth = sysInfo.screenWidth;
+
+      this.setData({ 
+        tableData,
+        canvasHeight: totalHeight,
+        canvasWidth: canvasWidth
+      }, () => {
+        // Draw table to canvas for sharing
+        setTimeout(() => {
+          this.drawTableToCanvas(tableData);
+        }, 500);
+      });
 
     } catch (err) {
       console.error(err);
@@ -65,6 +92,61 @@ Page({
     } finally {
       wx.hideLoading();
     }
+  },
+
+  // Process records into daily table format with morning/noon/evening averages
+  processTableData(allRecords: any[]) {
+    if (!allRecords || allRecords.length === 0) return [];
+
+    // Group by date
+    const grouped: { [key: string]: { morning: any[], noon: any[], evening: any[] } } = {};
+    
+    allRecords.forEach(r => {
+      const d = new Date(r.measured_at);
+      const dateStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+      const hour = d.getHours();
+
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = { morning: [], noon: [], evening: [] };
+      }
+
+      // Morning: 4:00-10:59, Noon: 11:00-15:59, Evening: 16:00-3:59
+      if (hour >= 4 && hour < 11) {
+        grouped[dateStr].morning.push(r);
+      } else if (hour >= 11 && hour < 16) {
+        grouped[dateStr].noon.push(r);
+      } else {
+        grouped[dateStr].evening.push(r);
+      }
+    });
+
+    // Calculate averages for each period
+    const calcAvg = (arr: any[]) => {
+      if (arr.length === 0) return { sys: null, dia: null, hr: null };
+      const sys = Math.round(arr.reduce((acc, cur) => acc + cur.systolic, 0) / arr.length);
+      const dia = Math.round(arr.reduce((acc, cur) => acc + cur.diastolic, 0) / arr.length);
+      const hr = Math.round(arr.reduce((acc, cur) => acc + (cur.heart_rate || 0), 0) / arr.length);
+      return { sys, dia, hr };
+    };
+
+    // Convert to array and sort by date (newest first)
+    const result = Object.keys(grouped)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+      .map(date => {
+        const dayData = grouped[date];
+        const dateObj = new Date(date);
+        const dateLabel = `${dateObj.getMonth() + 1}-${dateObj.getDate()}`;
+        
+        return {
+          date,
+          dateLabel,
+          morning: calcAvg(dayData.morning),
+          noon: calcAvg(dayData.noon),
+          evening: calcAvg(dayData.evening)
+        };
+      });
+
+    return result;
   },
 
   calculateStats(records: any[]) {
@@ -124,7 +206,7 @@ Page({
     });
   },
 
-  drawShareImage(records: any[]) {
+  drawTableToCanvas(data: any[]) {
     const query = wx.createSelectorQuery();
     query.select('#shareCanvas')
       .fields({ node: true, size: true })
@@ -142,217 +224,173 @@ Page({
         canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
-        // Draw Background
+        // White background
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
 
-        // Draw Header
-        ctx.fillStyle = '#333333';
-        ctx.font = 'bold 20px sans-serif';
+        // Margins
+        const marginX = 10;
+        const marginY = 20;
+        const contentWidth = width - marginX * 2;
+        const contentHeight = height - marginY * 2;
+
+        // Title
+        ctx.fillStyle = '#000000';
+        ctx.font = 'bold 16px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('安压宝 · 血压健康报告', width / 2, 40);
+        ctx.fillText('血压记录表', width / 2, marginY + 10);
 
-        // Draw Date Range
-        const now = new Date();
-        const days = parseInt(this.data.timeRange);
-        const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-        const dateStr = `${startDate.getMonth()+1}.${startDate.getDate()} - ${now.getMonth()+1}.${now.getDate()}`;
+        // Table Header
+        const tableTop = marginY + 30;
+        const rowHeight = 30; // Fixed row height
         
-        ctx.fillStyle = '#666666';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(dateStr, width / 2, 70);
+        // Column widths
+        // Date: 15%, Morning: 28%, Noon: 28%, Evening: 28%
+        const colDateW = contentWidth * 0.16;
+        const colSectionW = (contentWidth - colDateW) / 3;
+        const colItemW = colSectionW / 3;
 
-        // Draw Stats Grid (2x2)
-        const statsY = 100;
-        const colW = width / 2;
-        const rowH = 60;
-        
-        // Row 1
-        this.drawStatItem(ctx, '平均高压', this.data.stats.avgSys.toString(), 0 * colW + colW/2, statsY);
-        this.drawStatItem(ctx, '平均低压', this.data.stats.avgDia.toString(), 1 * colW + colW/2, statsY);
-        
-        // Row 2
-        this.drawStatItem(ctx, '平均心率', this.data.stats.avgHr ? this.data.stats.avgHr.toString() : '--', 0 * colW + colW/2, statsY + rowH);
-        this.drawStatItem(ctx, '异常次数', this.data.stats.abnormalCount.toString(), 1 * colW + colW/2, statsY + rowH, '#ff4d4f');
-
-        // Draw Chart Area
-        const chartY = 230;
-        const chartHeight = 200;
-        const padding = 20;
-        
-        // Chart Background
-        ctx.fillStyle = '#f9f9f9';
-        ctx.fillRect(padding, chartY, width - padding * 2, chartHeight);
-
-        if (records.length > 1) {
-          this.drawMiniChart(ctx, records, padding, chartY, width - padding * 2, chartHeight);
-        } else {
-          ctx.fillStyle = '#999';
-          ctx.font = '14px sans-serif';
-          ctx.fillText('数据不足，无法绘制趋势', width / 2, chartY + chartHeight / 2);
-        }
-
-        // Interpretation Text
-        ctx.fillStyle = '#666666';
-        ctx.font = '12px sans-serif';
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(this.data.stats.interpretation, width / 2, chartY + chartHeight + 30);
+        ctx.textBaseline = 'middle';
 
+        // Draw Header Row 1 (Date, Morning, Noon, Evening)
+        let currentX = marginX;
+        const headerY1 = tableTop;
+        const headerY2 = tableTop + rowHeight;
+        
+        // Header Background
+        ctx.fillStyle = '#1890ff';
+        ctx.fillRect(marginX, headerY1, contentWidth, rowHeight);
+        ctx.fillStyle = '#e6f7ff';
+        ctx.fillRect(marginX, headerY2, contentWidth, rowHeight);
+
+        ctx.fillStyle = '#ffffff'; // Text color for main header
+
+        // Date Box
+        ctx.strokeRect(currentX, headerY1, colDateW, rowHeight * 2);
+        ctx.fillText('日期', currentX + colDateW/2, headerY1 + rowHeight/2);
+        currentX += colDateW;
+
+        // Sections
+        ['早上', '中午', '晚上'].forEach(section => {
+          ctx.strokeRect(currentX, headerY1, colSectionW, rowHeight);
+          ctx.fillText(section, currentX + colSectionW/2, headerY1 + rowHeight/2);
+          
+          // Sub headers
+          ctx.save();
+          ctx.fillStyle = '#1890ff'; // Text color for sub header
+          ['收缩', '舒张', '心率'].forEach((sub, idx) => {
+            ctx.strokeRect(currentX + idx * colItemW, headerY2, colItemW, rowHeight);
+            ctx.fillText(sub, currentX + idx * colItemW + colItemW/2, headerY2 + rowHeight/2);
+          });
+          ctx.restore();
+          
+          currentX += colSectionW;
+        });
+
+        // Draw Data Rows
+        let currentY = headerY2 + rowHeight;
+        ctx.fillStyle = '#333333'; // Data text color
+        
+        // Use all data, no row limit
+        const displayData = data;
+
+        displayData.forEach((row, index) => {
+          currentX = marginX;
+          
+          // Zebra striping
+          if (index % 2 === 1) {
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(currentX, currentY, contentWidth, rowHeight);
+            ctx.fillStyle = '#333333';
+          }
+
+          // Date
+          ctx.strokeRect(currentX, currentY, colDateW, rowHeight);
+          const dateObj = new Date(row.date);
+          const dateStr = `${dateObj.getMonth()+1}-${dateObj.getDate()}`;
+          ctx.fillText(dateStr, currentX + colDateW/2, currentY + rowHeight/2);
+          currentX += colDateW;
+
+          // Data
+          [row.morning, row.noon, row.evening].forEach(item => {
+            if (item && item.sys) {
+              // Sys
+              ctx.strokeRect(currentX, currentY, colItemW, rowHeight);
+              if (item.sys >= 140) ctx.fillStyle = '#ff4d4f';
+              ctx.fillText(item.sys.toString(), currentX + colItemW/2, currentY + rowHeight/2);
+              ctx.fillStyle = '#333333';
+              
+              // Dia
+              ctx.strokeRect(currentX + colItemW, currentY, colItemW, rowHeight);
+              if (item.dia >= 90) ctx.fillStyle = '#ff4d4f';
+              ctx.fillText(item.dia.toString(), currentX + colItemW * 1.5, currentY + rowHeight/2);
+              ctx.fillStyle = '#333333';
+              
+              // HR
+              ctx.strokeRect(currentX + colItemW * 2, currentY, colItemW, rowHeight);
+              ctx.fillText(item.hr.toString(), currentX + colItemW * 2.5, currentY + rowHeight/2);
+            } else {
+              // Empty cells
+              ctx.strokeRect(currentX, currentY, colItemW, rowHeight);
+              ctx.strokeRect(currentX + colItemW, currentY, colItemW, rowHeight);
+              ctx.strokeRect(currentX + colItemW * 2, currentY, colItemW, rowHeight);
+            }
+            currentX += colSectionW;
+          });
+
+          currentY += rowHeight;
+        });
+        
         // Footer
-        const footerY = height - 30;
+        ctx.textAlign = 'right';
+        ctx.font = '10px sans-serif';
         ctx.fillStyle = '#999999';
-        ctx.font = '10px sans-serif';
-        
-        const timeStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        ctx.fillText(`报告生成时间：${timeStr}`, width / 2, footerY);
-        ctx.fillText('由「安压宝」小程序生成', width / 2, footerY + 15);
-      });
-  },
+        ctx.fillText('由「安压宝」生成', width - marginX, height - 5);
 
-  drawStatItem(ctx: any, label: string, value: string, x: number, y: number, color: string = '#333') {
-    ctx.fillStyle = '#999';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(label, x, y);
-    
-    ctx.fillStyle = color;
-    ctx.font = 'bold 24px DIN Alternate, sans-serif';
-    ctx.fillText(value, x, y + 30);
-  },
-
-  drawMiniChart(ctx: any, records: any[], x: number, y: number, w: number, h: number) {
-    // Simple line chart
-    const sysValues = records.map(r => r.systolic);
-    const diaValues = records.map(r => r.diastolic);
-    const allValues = [...sysValues, ...diaValues];
-    
-    // Fixed range for better visualization of zones
-    let minVal = Math.min(...allValues) - 10;
-    let maxVal = Math.max(...allValues) + 10;
-    if (minVal > 60) minVal = 60;
-    if (maxVal < 180) maxVal = 180;
-    
-    const range = maxVal - minVal;
-
-    const getX = (i: number) => x + (i / (records.length - 1)) * w;
-    const getY = (v: number) => y + h - ((v - minVal) / range) * h;
-
-    // Draw Reference Zones
-    // Normal: <140 (Green tint)
-    // Level 1: 140-160 (Yellow tint)
-    // Level 2+: >160 (Red tint)
-    
-    const y140 = getY(140);
-    const y160 = getY(160);
-    const yTop = y;
-    const yBottom = y + h;
-
-    // Zone > 160 (Red)
-    if (y160 > yTop) {
-        ctx.fillStyle = 'rgba(255, 77, 79, 0.1)';
-        ctx.fillRect(x, yTop, w, Math.max(0, y160 - yTop));
-    }
-    
-    // Zone 140-160 (Yellow)
-    if (y140 > yTop) {
-        const top = Math.max(yTop, y160);
-        const bottom = Math.min(yBottom, y140);
-        if (bottom > top) {
-            ctx.fillStyle = 'rgba(250, 173, 20, 0.1)';
-            ctx.fillRect(x, top, w, bottom - top);
-        }
-    }
-
-    // Zone < 140 (Green)
-    if (y140 < yBottom) {
-        const top = Math.max(yTop, y140);
-        ctx.fillStyle = 'rgba(82, 196, 26, 0.1)';
-        ctx.fillRect(x, top, w, yBottom - top);
-    }
-
-    // Draw Reference Lines
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    
-    // 140 Line
-    if (y140 >= yTop && y140 <= yBottom) {
-        ctx.beginPath();
-        ctx.moveTo(x, y140);
-        ctx.lineTo(x + w, y140);
-        ctx.stroke();
-        ctx.fillStyle = '#999';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('140', x + 5, y140 - 2);
-    }
-
-    // 90 Line
-    const y90 = getY(90);
-    if (y90 >= yTop && y90 <= yBottom) {
-        ctx.beginPath();
-        ctx.moveTo(x, y90);
-        ctx.lineTo(x + w, y90);
-        ctx.stroke();
-        ctx.fillText('90', x + 5, y90 - 2);
-    }
-    
-    ctx.setLineDash([]);
-
-    // Draw Systolic Line
-    ctx.beginPath();
-    ctx.strokeStyle = '#FF6B6B';
-    ctx.lineWidth = 2;
-    records.forEach((r, i) => {
-      if (i === 0) ctx.moveTo(getX(i), getY(r.systolic));
-      else ctx.lineTo(getX(i), getY(r.systolic));
-    });
-    ctx.stroke();
-
-    // Draw Diastolic Line
-    ctx.beginPath();
-    ctx.strokeStyle = '#4D96FF';
-    records.forEach((r, i) => {
-      if (i === 0) ctx.moveTo(getX(i), getY(r.diastolic));
-      else ctx.lineTo(getX(i), getY(r.diastolic));
-    });
-    ctx.stroke();
-  },
-
-  onSaveImage() {
-    const query = wx.createSelectorQuery();
-    query.select('#shareCanvas')
-      .fields({ node: true, size: true })
-      .exec((res) => {
-        const canvas = res[0].node;
+        // Generate temp file path
         wx.canvasToTempFilePath({
           canvas,
+          fileType: 'jpg',
+          quality: 0.8,
           success: (res) => {
-            wx.saveImageToPhotosAlbum({
-              filePath: res.tempFilePath,
-              success: () => {
-                wx.showToast({ title: '已保存到相册', icon: 'success' });
-              },
-              fail: (err) => {
-                console.error(err);
-                if (err.errMsg.includes('auth')) {
-                  wx.showModal({
-                    title: '提示',
-                    content: '需要您授权保存图片到相册',
-                    success: (modalRes) => {
-                      if (modalRes.confirm) wx.openSetting();
-                    }
-                  });
-                }
-              }
-            });
+            this.setData({ tempFilePath: res.tempFilePath });
           }
         });
       });
   },
 
+  onShareImage() {
+    if (!this.data.tempFilePath) {
+      wx.showToast({ title: '正在生成图片...', icon: 'none' });
+      return;
+    }
+
+    wx.showShareImageMenu({
+      path: this.data.tempFilePath,
+      success: () => {
+        console.log('分享成功');
+      },
+      fail: (err) => {
+        console.log('showShareImageMenu failed, trying preview', err);
+        wx.previewImage({
+          urls: [this.data.tempFilePath],
+          current: this.data.tempFilePath
+        });
+      }
+    });
+  },
+
   onShareAppMessage() {
     return {
       title: '我的血压健康报告',
-      path: '/pages/share/share'
+      path: '/pages/index/index',
+      imageUrl: this.data.tempFilePath || undefined
     };
   }
 });
+
+

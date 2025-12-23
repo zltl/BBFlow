@@ -1,83 +1,222 @@
-<view class="container">
-  <view class="chart-container">
-    <view class="chart-header">
-      <view class="header-left">
-        <text class="chart-label">血压趋势</text>
-        <view class="legend-mini">
-          <view class="legend-item-mini">
-            <view class="color-box-mini normal"></view>
-            <text>正常</text>
+<view class="page-scroll">
+  <view class="container">
+    <view class="chart-container">
+      <view class="chart-header">
+        <view class="header-left">
+          <text class="chart-label">血压趋势</text>
+          <view class="legend-mini">
+            <view class="legend-item-mini">
+              <view class="color-box-mini normal"></view>
+              <text>正常</text>
+            </view>
+            <view class="legend-item-mini">
+              <view class="color-box-mini level1"></view>
+              <text>一级</text>
+            </view>
+            <view class="legend-item-mini">
+              <view class="color-box-mini level2"></view>
+              <text>危险</text>
+            </view>
           </view>
-          <view class="legend-item-mini">
-            <view class="color-box-mini level1"></view>
-            <text>一级</text>
+        </view>
+        <view class="header-right">
+          <view class="auto-avg-switch" bindtap="toggleAutoAverage">
+            <text class="switch-label">自动均值</text>
+            <view class="switch-icon {{autoAverage ? 'active' : ''}}">
+              <view class="switch-circle"></view>
+            </view>
           </view>
-          <view class="legend-item-mini">
-            <view class="color-box-mini level2"></view>
-            <text>危险</text>
+          <view class="legend-inline">
+            <view class="legend-item">
+              <view class="dot high"></view>
+              <text>收缩压</text>
+            </view>
+            <view class="legend-item">
+              <view class="dot low"></view>
+              <text>舒张压</text>
+            </view>
           </view>
         </view>
       </view>
-      <view class="header-right">
-        <view class="auto-avg-switch" bindtap="toggleAutoAverage">
-          <text class="switch-label">自动均值</text>
-          <view class="switch-icon {{autoAverage ? 'active' : ''}}">
-            <view class="switch-circle"></view>
+      <view class="chart-body">
+        <canvas type="2d" id="yAxisBP" class="y-axis" style="width: 40px; height: 500rpx;"></canvas>
+        <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeft}}" bindscroll="handleBPScroll" bindscrolltoupper="onScrollToLeft" upper-threshold="100">
+          <canvas type="2d" id="trendChart" class="chart" style="width: {{canvasWidth}}px; height: 500rpx;" bindlongpress="onChartLongPress" bindtouchend="onChartTouchEnd"></canvas>
+        </scroll-view>
+        
+        <!-- Tooltip -->
+        <view class="tooltip" wx:if="{{tooltip.visible}}" style="left: {{tooltip.x}}px; top: {{tooltip.y}}px;">
+          <view class="tooltip-date">{{tooltip.date}} {{tooltip.time}}</view>
+          <view class="tooltip-row">
+            <view class="dot high"></view>
+            <text>收缩压: {{tooltip.systolic}}</text>
+          </view>
+          <view class="tooltip-row">
+            <view class="dot low"></view>
+            <text>舒张压: {{tooltip.diastolic}}</text>
+          </view>
+          <view class="tooltip-row">
+            <view class="dot heart-rate"></view>
+            <text>心率: {{tooltip.heartRate}}</text>
           </view>
         </view>
+      </view>
+    </view>
+
+    <view class="chart-container chart-compact">
+      <view class="chart-header">
+        <text class="chart-label">心率趋势</text>
         <view class="legend-inline">
           <view class="legend-item">
-            <view class="dot high"></view>
-            <text>收缩压</text>
-          </view>
-          <view class="legend-item">
-            <view class="dot low"></view>
-            <text>舒张压</text>
+            <view class="dot heart-rate"></view>
+            <text>心率</text>
           </view>
         </view>
       </view>
-    </view>
-    <view class="chart-body">
-      <canvas type="2d" id="yAxisBP" class="y-axis" style="width: 40px; height: 500rpx;"></canvas>
-      <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeft}}" bindscroll="handleBPScroll" bindscrolltoupper="onScrollToLeft" upper-threshold="100">
-        <canvas type="2d" id="trendChart" class="chart" style="width: {{canvasWidth}}px; height: 500rpx;" bindlongpress="onChartLongPress" bindtouchend="onChartTouchEnd"></canvas>
-      </scroll-view>
-      
-      <!-- Tooltip -->
-      <view class="tooltip" wx:if="{{tooltip.visible}}" style="left: {{tooltip.x}}px; top: {{tooltip.y}}px;">
-        <view class="tooltip-date">{{tooltip.date}} {{tooltip.time}}</view>
-        <view class="tooltip-row">
-          <view class="dot high"></view>
-          <text>收缩压: {{tooltip.systolic}}</text>
-        </view>
-        <view class="tooltip-row">
-          <view class="dot low"></view>
-          <text>舒张压: {{tooltip.diastolic}}</text>
-        </view>
-        <view class="tooltip-row">
-          <view class="dot heart-rate"></view>
-          <text>心率: {{tooltip.heartRate}}</text>
-        </view>
+      <view class="chart-body">
+        <canvas type="2d" id="yAxisHR" class="y-axis" style="width: 40px; height: 400rpx;"></canvas>
+        <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeftHR}}" bindscroll="handleHRScroll">
+          <canvas type="2d" id="heartRateChart" class="chart" style="width: {{canvasWidthHR}}px; height: 400rpx;"></canvas>
+        </scroll-view>
       </view>
     </view>
-    <!-- Footer removed as legend moved to header -->
-  </view>
 
-  <view class="chart-container chart-compact">
-    <view class="chart-header">
-      <text class="chart-label">心率趋势</text>
-      <view class="legend-inline">
-        <view class="legend-item">
-          <view class="dot heart-rate"></view>
-          <text>心率</text>
+    <!-- History Records Section -->
+    <view class="history-section">
+      <view class="section-header">
+        <text class="section-title">历史记录</text>
+        <view class="header-actions">
+          <view class="view-toggle">
+            <view class="toggle-btn {{viewMode === 'list' ? 'active' : ''}}" bindtap="switchToListView">列表</view>
+            <view class="toggle-btn {{viewMode === 'table' ? 'active' : ''}}" bindtap="switchToTableView">表格</view>
+          </view>
+          <picker mode="date" fields="month" value="{{filterDate}}" bindchange="onDateFilterChange">
+            <view class="filter-btn">
+              {{filterDate || '全部'}} <text class="arrow">▼</text>
+            </view>
+          </picker>
         </view>
       </view>
-    </view>
-    <view class="chart-body">
-      <canvas type="2d" id="yAxisHR" class="y-axis" style="width: 40px; height: 400rpx;"></canvas>
-      <scroll-view scroll-x="true" class="chart-scroll" scroll-left="{{scrollLeftHR}}" bindscroll="handleHRScroll">
-        <canvas type="2d" id="heartRateChart" class="chart" style="width: {{canvasWidthHR}}px; height: 400rpx;"></canvas>
-      </scroll-view>
+
+      <block wx:if="{{historyRecords.length === 0 && !isLoadingHistory}}">
+        <view class="empty-state">
+          <text class="empty-icon">📋</text>
+          <text class="empty-text">暂无记录</text>
+        </view>
+      </block>
+
+      <!-- List View -->
+      <block wx:if="{{viewMode === 'list' && (historyRecords.length > 0 || isLoadingHistory)}}">
+        <view class="date-group" wx:for="{{historyRecords}}" wx:key="dateKey">
+          <view class="date-header">{{item.dateLabel}}</view>
+          <view class="record-list">
+            <view class="record-card" wx:for="{{item.records}}" wx:key="id" wx:for-item="record" bindtap="showDetail" data-item="{{record}}">
+              <view class="card-main">
+                <view class="card-top">
+                  <view class="time-tag-group">
+                    <text class="time">{{record.timeStr}}</text>
+                    <text class="period-tag" wx:if="{{record.tags && record.tags.length > 0}}">{{record.tags[0]}}</text>
+                    <text class="merged-badge" wx:if="{{record._mergedCount > 1}}">平均({{record._mergedCount}})</text>
+                  </view>
+                  <view class="warning-group" wx:if="{{record.hypertensionLevel.level >= 2}}">
+                    <text class="warning-text" wx:if="{{record.hypertensionLevel.detail}}">{{record.hypertensionLevel.detail}}</text>
+                    <view class="warning-icon">⚠️</view>
+                  </view>
+                </view>
+
+                <view class="card-middle">
+                  <view class="bp-section">
+                    <text class="bp-value">{{record.systolic}}/{{record.diastolic}}</text>
+                  </view>
+                  <view class="status-section">
+                    <view class="status-badge" style="background-color: {{record.hypertensionLevel.color}}20; color: {{record.hypertensionLevel.color}}">
+                      {{record.hypertensionLevel.text}}
+                    </view>
+                    <view class="hr-item">
+                      <text class="hr-value">{{record.heartRate}}</text>
+                      <text class="hr-icon">❤️</text>
+                    </view>
+                  </view>
+                </view>
+
+                <view class="card-bottom" wx:if="{{record.note}}">
+                  <text class="note-icon">📝</text>
+                  <text class="note-text">{{record.note}}</text>
+                </view>
+              </view>
+
+              <view class="card-arrow">
+                <text class="arrow-icon">›</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <view class="loading-footer" wx:if="{{isLoadingHistory}}">
+          <text>加载中...</text>
+        </view>
+        <view class="loading-footer" wx:if="{{!hasMoreHistory && historyRecords.length > 0}}">
+          <text>没有更多记录了</text>
+        </view>
+      </block>
+
+      <!-- Table View -->
+      <block wx:if="{{viewMode === 'table'}}">
+        <view class="table-view-container">
+          <scroll-view scroll-x="true" class="table-scroll" enhanced="true" show-scrollbar="true">
+            <view class="bp-table-daily">
+              <!-- Header Row 1: Group titles -->
+              <view class="table-header-top">
+                <view class="header-cell cell-date">日期</view>
+                <view class="header-cell cell-item"></view>
+                <view class="header-cell cell-item">早上</view>
+                <view class="header-cell cell-item"></view>
+                <view class="header-cell cell-item"></view>
+                <view class="header-cell cell-item">中午</view>
+                <view class="header-cell cell-item"></view>
+                <view class="header-cell cell-item"></view>
+                <view class="header-cell cell-item">晚上</view>
+                <view class="header-cell cell-item"></view>
+              </view>
+              <!-- Header Row 2: Sub titles -->
+              <view class="table-header-sub">
+                <view class="header-cell cell-date"></view>
+                <view class="header-cell cell-item">收缩</view>
+                <view class="header-cell cell-item">舒张</view>
+                <view class="header-cell cell-item">心率</view>
+                <view class="header-cell cell-item">收缩</view>
+                <view class="header-cell cell-item">舒张</view>
+                <view class="header-cell cell-item">心率</view>
+                <view class="header-cell cell-item">收缩</view>
+                <view class="header-cell cell-item">舒张</view>
+                <view class="header-cell cell-item">心率</view>
+              </view>
+              <!-- Data Rows -->
+              <view class="table-data-row" wx:for="{{tableData}}" wx:key="date">
+                <view class="data-cell cell-date">{{item.dateLabel}}</view>
+                <!-- Morning -->
+                <view class="data-cell cell-item {{item.morning.sys >= 140 ? 'abnormal' : ''}}">{{item.morning.sys || '-'}}</view>
+                <view class="data-cell cell-item {{item.morning.dia >= 90 ? 'abnormal' : ''}}">{{item.morning.dia || '-'}}</view>
+                <view class="data-cell cell-item">{{item.morning.hr || '-'}}</view>
+                <!-- Noon -->
+                <view class="data-cell cell-item {{item.noon.sys >= 140 ? 'abnormal' : ''}}">{{item.noon.sys || '-'}}</view>
+                <view class="data-cell cell-item {{item.noon.dia >= 90 ? 'abnormal' : ''}}">{{item.noon.dia || '-'}}</view>
+                <view class="data-cell cell-item">{{item.noon.hr || '-'}}</view>
+                <!-- Evening -->
+                <view class="data-cell cell-item {{item.evening.sys >= 140 ? 'abnormal' : ''}}">{{item.evening.sys || '-'}}</view>
+                <view class="data-cell cell-item {{item.evening.dia >= 90 ? 'abnormal' : ''}}">{{item.evening.dia || '-'}}</view>
+                <view class="data-cell cell-item">{{item.evening.hr || '-'}}</view>
+              </view>
+            </view>
+          </scroll-view>
+          <view class="table-footer">
+            <text>共 {{totalRecordCount}} 条记录，{{tableData.length}} 天</text>
+          </view>
+        </view>
+        <view class="loading-footer" wx:if="{{isLoadingHistory}}">
+          <text>加载中...</text>
+        </view>
+      </block>
     </view>
   </view>
 </view>

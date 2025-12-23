@@ -5,6 +5,7 @@
     "pages/history/history",
     "pages/share/share",
     "pages/share-link/share-link",
+    "pages/share-table/share-table",
     "pages/viewer/viewer",
     "pages/guide/guide",
     "pages/logs/logs"
@@ -26,10 +27,6 @@
       {
         "pagePath": "pages/trend/trend",
         "text": "趋势"
-      },
-      {
-        "pagePath": "pages/history/history",
-        "text": "历史"
       },
       {
         "pagePath": "pages/share/share",

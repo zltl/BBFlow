@@ -14,17 +14,63 @@
   </view>
 
   <view class="preview-area">
-    <canvas type="2d" id="shareCanvas" class="share-canvas" style="width: 300px; height: 550px;"></canvas>
+    <view class="table-view-container">
+      <scroll-view scroll-x="true" class="table-scroll" enhanced="true" show-scrollbar="true">
+        <view class="bp-table-daily">
+          <!-- Header Row 1: Group titles -->
+          <view class="table-header-top">
+            <view class="header-cell cell-date">日期</view>
+            <view class="header-cell cell-item"></view>
+            <view class="header-cell cell-item">早上</view>
+            <view class="header-cell cell-item"></view>
+            <view class="header-cell cell-item"></view>
+            <view class="header-cell cell-item">中午</view>
+            <view class="header-cell cell-item"></view>
+            <view class="header-cell cell-item"></view>
+            <view class="header-cell cell-item">晚上</view>
+            <view class="header-cell cell-item"></view>
+          </view>
+          <!-- Header Row 2: Sub titles -->
+          <view class="table-header-sub">
+            <view class="header-cell cell-date"></view>
+            <view class="header-cell cell-item">收缩</view>
+            <view class="header-cell cell-item">舒张</view>
+            <view class="header-cell cell-item">心率</view>
+            <view class="header-cell cell-item">收缩</view>
+            <view class="header-cell cell-item">舒张</view>
+            <view class="header-cell cell-item">心率</view>
+            <view class="header-cell cell-item">收缩</view>
+            <view class="header-cell cell-item">舒张</view>
+            <view class="header-cell cell-item">心率</view>
+          </view>
+          <!-- Data Rows -->
+          <view class="table-data-row" wx:for="{{tableData}}" wx:key="date">
+            <view class="data-cell cell-date">{{item.dateLabel}}</view>
+            <!-- Morning -->
+            <view class="data-cell cell-item {{item.morning.sys >= 140 ? 'abnormal' : ''}}">{{item.morning.sys || '-'}}</view>
+            <view class="data-cell cell-item {{item.morning.dia >= 90 ? 'abnormal' : ''}}">{{item.morning.dia || '-'}}</view>
+            <view class="data-cell cell-item">{{item.morning.hr || '-'}}</view>
+            <!-- Noon -->
+            <view class="data-cell cell-item {{item.noon.sys >= 140 ? 'abnormal' : ''}}">{{item.noon.sys || '-'}}</view>
+            <view class="data-cell cell-item {{item.noon.dia >= 90 ? 'abnormal' : ''}}">{{item.noon.dia || '-'}}</view>
+            <view class="data-cell cell-item">{{item.noon.hr || '-'}}</view>
+            <!-- Evening -->
+            <view class="data-cell cell-item {{item.evening.sys >= 140 ? 'abnormal' : ''}}">{{item.evening.sys || '-'}}</view>
+            <view class="data-cell cell-item {{item.evening.dia >= 90 ? 'abnormal' : ''}}">{{item.evening.dia || '-'}}</view>
+            <view class="data-cell cell-item">{{item.evening.hr || '-'}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
   </view>
+
+  <!-- Hidden Canvas for Image Generation -->
+  <canvas type="2d" id="shareCanvas" style="position: fixed; left: -9999px; top: 0; width: {{canvasWidth}}px; height: {{canvasHeight}}px;"></canvas>
 
   <view class="action-area">
     <view class="btn-group">
-      <button class="share-btn" open-type="share">微信好友分享</button>
-      <button class="save-btn" bindtap="onSaveImage">保存报告图片</button>
+      <button class="share-btn" bindtap="onShareImage">微信好友分享</button>
     </view>
-    <navigator url="/pages/share-link/share-link" class="link-share-entry">
-      <text>创建实时数据分享链接 ›</text>
-    </navigator>
-    <view class="tips">保存后可发送给家人或医生</view>
+    <view class="tips">将以图片形式直接发送给好友</view>
   </view>
 </view>

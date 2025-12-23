@@ -42,10 +42,10 @@ func GetRecords(c *gin.Context) {
 	}
 
 	rows, err := db.Pool.Query(context.Background(),
-		`SELECT id, user_id, systolic, diastolic, heart_rate, measured_at, tags, note, created_at 
+		`SELECT id, user_id, systolic, diastolic, heart_rate, measured_at, COALESCE(tags, ''), COALESCE(note, ''), created_at 
 		 FROM bp_records WHERE user_id = $1 ORDER BY measured_at DESC`, openid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database query error: " + err.Error()})
 		return
 	}
 	defer rows.Close()
@@ -55,7 +55,7 @@ func GetRecords(c *gin.Context) {
 		var r BPRecord
 		if err := rows.Scan(&r.ID, &r.UserID, &r.Systolic, &r.Diastolic, &r.HeartRate,
 			&r.MeasuredAt, &r.Tags, &r.Note, &r.CreatedAt); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Scan error: " + err.Error()})
 			return
 		}
 		records = append(records, r)

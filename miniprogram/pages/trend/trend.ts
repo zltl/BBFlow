@@ -16,23 +16,38 @@ Page({
       systolic: 0,
       diastolic: 0,
       heartRate: 0
-    }
+    },
+    // History section data
+    historyRecords: [] as any[],
+    filterDate: '',
+    isLoadingHistory: false,
+    hasMoreHistory: true,
+    viewMode: 'list' as 'list' | 'table',  // 'list' or 'table'
+    currentDate: '',
+    totalRecordCount: 0,
+    tableData: [] as any[]  // Daily grouped table data
   },
 
   isSyncingScroll: false,
   
-  // Pagination state
+  // Pagination state for charts
   _allRecords: [] as any[],
   _chartPoints: [] as any[],
   _renderedCount: 0,
   _isLoadingMore: false,
   PAGE_SIZE: 30,
 
+  // Pagination state for history
+  _historyAllRecords: [] as any[],
+  _historyPageSize: 20,
+  _historyCurrentPage: 1,
+
   onShow() {
     const storageValue = wx.getStorageSync('autoAverage');
     const autoAverage = storageValue === '' ? true : storageValue;
     this.setData({ autoAverage });
     this.loadDataAndDraw();
+    this.loadHistoryRecords();
   },
 
   toggleAutoAverage() {
@@ -40,6 +55,7 @@ Page({
     this.setData({ autoAverage: newValue });
     wx.setStorageSync('autoAverage', newValue);
     this.loadDataAndDraw();
+    this.loadHistoryRecords();
   },
 
   mergeRecordsByTimeWindow(records: any[], windowHours: number = 2): any[] {
@@ -464,11 +480,11 @@ Page({
              ctx.stroke();
              ctx.setLineDash([]); // Reset
 
-             // 3. Morning/Evening Labels (Top layer)
-             ctx.fillStyle = '#666666';
-             ctx.font = '11px sans-serif';
-             ctx.fillText('早', dayStartX + pixelsPerDay * 0.25, height - paddingBottom + 15);
-             ctx.fillText('晚', dayStartX + pixelsPerDay * 0.75, height - paddingBottom + 15);
+             // 3. Morning/Evening Labels (Top layer) - Removed as requested
+             // ctx.fillStyle = '#666666';
+             // ctx.font = '11px sans-serif';
+             // ctx.fillText('早', dayStartX + pixelsPerDay * 0.25, height - paddingBottom + 15);
+             // ctx.fillText('晚', dayStartX + pixelsPerDay * 0.75, height - paddingBottom + 15);
 
              // 4. Date Label (Bottom layer)
              const [, month, day] = dayStr.split('-');
@@ -707,11 +723,11 @@ Page({
              ctx.font = '11px sans-serif';
              ctx.fillText(dateLabel, dayCenterX, height - 15);
 
-             // Morning/Evening Labels (Top of X-axis area)
-             ctx.fillStyle = '#666666';
-             ctx.font = '11px sans-serif';
-             ctx.fillText('早', dayStartX + pixelsPerDay * 0.25, height - 32);
-             ctx.fillText('晚', dayStartX + pixelsPerDay * 0.75, height - 32);
+             // Morning/Evening Labels (Top of X-axis area) - Removed as requested
+             // ctx.fillStyle = '#666666';
+             // ctx.font = '11px sans-serif';
+             // ctx.fillText('早', dayStartX + pixelsPerDay * 0.25, height - 32);
+             // ctx.fillText('晚', dayStartX + pixelsPerDay * 0.75, height - 32);
           });
           
           // Right Border
@@ -767,5 +783,252 @@ Page({
 
           // Scroll logic moved to parent
         });
+  },
+
+  // ========== History Section Methods ==========
+
+  async loadHistoryRecords() {
+    const openid = wx.getStorageSync('openid');
+    if (!openid) return;
+
+    this.setData({ isLoadingHistory: true });
+
+    try {
+      const res = await request<{ data: any[] }>({
+        url: `/records?openid=${openid}`,
+        method: 'GET'
+      });
+
+      let records = res.data.map(item => {
+        const dateObj = new Date(item.measured_at);
+        const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+        const day = dateObj.getDate().toString().padStart(2, '0');
+        const hour = dateObj.getHours().toString().padStart(2, '0');
+        const minute = dateObj.getMinutes().toString().padStart(2, '0');
+        const level = this.getHypertensionLevel(item.systolic, item.diastolic);
+
+        const dateKey = `${dateObj.getFullYear()}-${month}-${day}`;
+        const dateLabel = `${parseInt(month, 10)}月${parseInt(day, 10)}日`;
+
+        let tags = [];
+        try {
+          tags = typeof item.tags === 'string' ? JSON.parse(item.tags) : item.tags;
+        } catch (e) {
+          tags = item.tags ? [item.tags] : [];
+        }
+
+        return {
+          ...item,
+          measuredAt: this.formatDateString(item.measured_at),
+          dateKey,
+          dateLabel,
+          timeStr: `${hour}:${minute}`,
+          tags: tags,
+          heartRate: item.heart_rate,
+          hypertensionLevel: level
+        };
+      });
+
+      if (this.data.filterDate) {
+        records = records.filter(r => r.measuredAt.startsWith(this.data.filterDate));
+      }
+
+      // Apply auto-average if enabled
+      records = this.mergeRecordsByTimeWindow(records, 2);
+
+      this._historyAllRecords = records;
+      this._historyCurrentPage = 1;
+      this.renderHistoryPage(1);
+
+    } catch (err) {
+      console.error('Failed to load history records', err);
+    } finally {
+      this.setData({ isLoadingHistory: false });
+    }
+  },
+
+  onReachBottom() {
+    if (this.data.hasMoreHistory && !this.data.isLoadingHistory) {
+      this.loadMoreHistory();
+    }
+  },
+
+  loadMoreHistory() {
+    this.setData({ isLoadingHistory: true });
+    
+    setTimeout(() => {
+      this._historyCurrentPage++;
+      this.renderHistoryPage(this._historyCurrentPage);
+      this.setData({ isLoadingHistory: false });
+    }, 300);
+  },
+
+  renderHistoryPage(page: number) {
+    const pageSize = this._historyPageSize;
+    const totalRecords = this._historyAllRecords.length;
+    const endIndex = page * pageSize;
+    
+    const currentSlice = this._historyAllRecords.slice(0, endIndex);
+    const groupedRecords = this.groupRecordsByDate(currentSlice);
+    
+    this.setData({
+      historyRecords: groupedRecords,
+      hasMoreHistory: endIndex < totalRecords
+    });
+  },
+
+  formatDateString(isoString: string) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}`;
+  },
+
+  getHypertensionLevel(systolic: number, diastolic: number) {
+    let level = -1;
+    let text = '正常';
+    let color = '#52c41a';
+    let detail = '';
+
+    if (systolic >= 180 || diastolic >= 110) {
+      level = 3; text = '三级高血压'; color = '#ff4d4f';
+    } else if (systolic >= 160 || diastolic >= 100) {
+      level = 2; text = '二级高血压'; color = '#ff7a45';
+    } else if (systolic >= 140 || diastolic >= 90) {
+      level = 1; text = '一级高血压'; color = '#ffa940';
+    } else if (systolic >= 120 || diastolic >= 80) {
+      level = 0; text = '正常高值'; color = '#faad14';
+    }
+
+    if (level >= 1) {
+      const sysHigh = systolic >= 140;
+      const diaHigh = diastolic >= 90;
+      if (sysHigh && diaHigh) {
+        detail = '收缩压与舒张压均偏高';
+      } else if (sysHigh) {
+        detail = '收缩压偏高，舒张压正常';
+      } else if (diaHigh) {
+        detail = '舒张压偏高，收缩压正常';
+      }
+    }
+
+    return { level, text, color, detail };
+  },
+
+  groupRecordsByDate(records: any[]) {
+    const groups: any = {};
+    records.forEach(record => {
+      const dateKey = record.dateKey;
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(record);
+    });
+    return Object.keys(groups)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+      .map(key => ({
+        dateKey: key,
+        dateLabel: groups[key]?.[0]?.dateLabel || key,
+        records: groups[key]
+      }));
+  },
+
+  onDateFilterChange(e: WechatMiniprogram.PickerChange) {
+    this.setData({
+      filterDate: e.detail.value as string
+    }, () => {
+      this.loadHistoryRecords();
+    });
+  },
+
+  showDetail(e: WechatMiniprogram.TouchEvent) {
+    const item = e.currentTarget.dataset.item;
+    wx.showModal({
+      title: '记录详情',
+      content: `时间: ${item.measuredAt}\n高压: ${item.systolic}\n低压: ${item.diastolic}\n心率: ${item.heartRate}\n标签: ${item.tags ? item.tags.join(', ') : '无'}\n备注: ${item.note || '无'}`,
+      showCancel: false
+    });
+  },
+
+  // View mode toggle methods
+  switchToListView() {
+    this.setData({ viewMode: 'list' });
+  },
+
+  switchToTableView() {
+    // Calculate total record count
+    let totalRecordCount = 0;
+    this.data.historyRecords.forEach((group: any) => {
+      totalRecordCount += group.records.length;
+    });
+    
+    // Process data into daily grouped format
+    const tableData = this.processTableData();
+    
+    this.setData({ 
+      viewMode: 'table',
+      totalRecordCount,
+      tableData
+    });
+  },
+
+  // Process records into daily table format with morning/noon/evening averages
+  processTableData() {
+    const allRecords = this._historyAllRecords;
+    if (!allRecords || allRecords.length === 0) return [];
+
+    // Group by date
+    const grouped: { [key: string]: { morning: any[], noon: any[], evening: any[] } } = {};
+    
+    allRecords.forEach(r => {
+      const d = new Date(r.measured_at);
+      const dateStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+      const hour = d.getHours();
+
+      if (!grouped[dateStr]) {
+        grouped[dateStr] = { morning: [], noon: [], evening: [] };
+      }
+
+      // Morning: 4:00-10:59, Noon: 11:00-15:59, Evening: 16:00-3:59
+      if (hour >= 4 && hour < 11) {
+        grouped[dateStr].morning.push(r);
+      } else if (hour >= 11 && hour < 16) {
+        grouped[dateStr].noon.push(r);
+      } else {
+        grouped[dateStr].evening.push(r);
+      }
+    });
+
+    // Calculate averages for each period
+    const calcAvg = (arr: any[]) => {
+      if (arr.length === 0) return { sys: null, dia: null, hr: null };
+      const sys = Math.round(arr.reduce((acc, cur) => acc + cur.systolic, 0) / arr.length);
+      const dia = Math.round(arr.reduce((acc, cur) => acc + cur.diastolic, 0) / arr.length);
+      const hr = Math.round(arr.reduce((acc, cur) => acc + (cur.heart_rate || 0), 0) / arr.length);
+      return { sys, dia, hr };
+    };
+
+    // Convert to array and sort by date (newest first)
+    const result = Object.keys(grouped)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+      .map(date => {
+        const dayData = grouped[date];
+        const dateObj = new Date(date);
+        const dateLabel = `${dateObj.getMonth() + 1}-${dateObj.getDate()}`;
+        
+        return {
+          date,
+          dateLabel,
+          morning: calcAvg(dayData.morning),
+          noon: calcAvg(dayData.noon),
+          evening: calcAvg(dayData.evening)
+        };
+      });
+
+    return result;
   }
 });
