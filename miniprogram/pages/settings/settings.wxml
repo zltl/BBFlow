@@ -1,0 +1,80 @@
+<view class="container">
+  <view class="section">
+    <view class="title">我的ID</view>
+    <view class="id-row">
+      <text class="id-text" selectable="true">{{openid || '未登录'}}</text>
+      <button class="copy-btn" size="mini" bindtap="copyOpenid" wx:if="{{openid}}">复制</button>
+    </view>
+  </view>
+
+  <!-- 我的推荐码 -->
+  <view class="section referral-section">
+    <view class="title">🎁 我的推荐码</view>
+    <view class="id-row">
+      <text class="referral-code">{{referralCode || '加载中...'}}</text>
+      <button class="copy-btn" size="mini" bindtap="copyReferralCode" wx:if="{{referralCode}}">复制</button>
+      <button class="share-btn" size="mini" open-type="share" wx:if="{{referralCode}}">分享</button>
+    </view>
+    <view class="referral-tip">分享给好友，好友注册后输入你的推荐码</view>
+  </view>
+
+  <!-- 输入推荐码 -->
+  <view class="section" wx:if="{{!hasReferrer}}">
+    <view class="title">输入推荐码</view>
+    <input placeholder="请输入好友的推荐码" bindinput="onReferrerCodeInput" value="{{referrerCode}}" />
+    <button bindtap="onBindReferrer">绑定推荐人</button>
+  </view>
+  <view class="section" wx:else>
+    <view class="title">推荐人</view>
+    <view class="referrer-bound">✅ 已绑定推荐人</view>
+  </view>
+
+  <view class="section">
+    <view class="title">授权码激活</view>
+    <input placeholder="请输入授权码" bindinput="onCodeInput" value="{{code}}" />
+    <button bindtap="onSubmitCode">提交授权码</button>
+  </view>
+
+  <view class="section" wx:if="{{authorized}}">
+    <view class="title">提交功能需求 / 反馈</view>
+    <picker mode="selector" range="{{types}}" bindchange="onTypeChange">
+      <view class="picker-view">{{selectedTypeDisplay}}</view>
+    </picker>
+    <textarea placeholder="请输入您的需求或反馈" bindinput="onContentInput">{{content}}</textarea>
+    <input placeholder="联系方式（可选）" bindinput="onContactInput" value="{{contact}}" />
+    <button bindtap="onSubmitFeedback">提交</button>
+  </view>
+
+  <!-- 管理员区块 -->
+  <view class="section admin-section" wx:if="{{isAdmin}}">
+    <view class="title">🔐 管理员 - 生成授权码</view>
+    <view class="form-row">
+      <text>数据配额</text>
+      <input type="number" value="{{adminDataQuota}}" bindinput="onAdminDataQuotaInput" />
+    </view>
+    <view class="form-row">
+      <text>OCR配额</text>
+      <input type="number" value="{{adminOcrQuota}}" bindinput="onAdminOcrQuotaInput" />
+    </view>
+    <view class="form-row">
+      <text>有效天数</text>
+      <input type="number" value="{{adminDays}}" bindinput="onAdminDaysInput" />
+    </view>
+    <view class="form-row">
+      <text>生成数量</text>
+      <input type="number" value="{{adminCount}}" bindinput="onAdminCountInput" />
+    </view>
+    <button type="primary" bindtap="onGenerateCodes">生成授权码</button>
+    
+    <view class="generated-codes" wx:if="{{generatedCodes.length > 0}}">
+      <view class="title">已生成的授权码（点击复制）</view>
+      <view class="code-item" wx:for="{{generatedCodes}}" wx:key="*this" bindtap="copyCode" data-code="{{item}}">
+        {{item}}
+      </view>
+    </view>
+  </view>
+
+  <view class="note">
+    <text>默认允许添加 {{defaults.DATA_ENTRIES}} 条数据，{{defaults.OCR_TIMES}} 次OCR识别。</text>
+  </view>
+</view>

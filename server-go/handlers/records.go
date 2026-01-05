@@ -71,6 +71,17 @@ func CreateRecord(c *gin.Context) {
 		return
 	}
 
+	// Check data quota
+	allowed, used, limit, err := checkQuota(context.Background(), openid, "data")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check quota"})
+		return
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "已达到数据条数上限", "used": used, "limit": limit})
+		return
+	}
+
 	var req CreateRecordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})

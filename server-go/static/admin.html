@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>安压宝 - 授权码管理</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+    h1 { color: #1890ff; }
+    .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    button { background: #1890ff; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #40a9ff; }
+    button.danger { background: #ff4d4f; }
+    button.danger:hover { background: #ff7875; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #fafafa; font-weight: 500; }
+    .code { font-family: monospace; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; }
+    .status-used { color: #ff4d4f; }
+    .status-unused { color: #52c41a; }
+    .copy-btn { background: #52c41a; padding: 6px 12px; font-size: 12px; margin-left: 8px; }
+    .generated-codes { background: #f6ffed; border: 1px solid #b7eb8f; padding: 15px; border-radius: 4px; margin-top: 15px; }
+    .generated-codes .code { display: block; margin: 5px 0; }
+    .hidden { display: none; }
+    .info { background: #e6f7ff; border: 1px solid #91d5ff; padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <h1>🔐 授权码管理</h1>
+
+  <div class="card">
+    <div class="info">
+      管理员权限基于用户身份验证。请输入你的 JWT Token（登录后从小程序获取）。
+    </div>
+    <div class="form-group">
+      <label>JWT Token</label>
+      <input type="text" id="jwtToken" placeholder="请输入你的登录 Token">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>生成新授权码</h2>
+    <div class="form-group">
+      <label>数据配额</label>
+      <input type="number" id="dataQuota" value="10000" min="1">
+    </div>
+    <div class="form-group">
+      <label>OCR配额</label>
+      <input type="number" id="ocrQuota" value="10000" min="1">
+    </div>
+    <div class="form-group">
+      <label>有效期（天）</label>
+      <input type="number" id="durationDays" value="365" min="1">
+    </div>
+    <div class="form-group">
+      <label>生成数量</label>
+      <input type="number" id="count" value="1" min="1" max="100">
+    </div>
+    <button onclick="generateCodes()">生成授权码</button>
+    <div id="generatedCodes" class="generated-codes hidden"></div>
+  </div>
+
+  <div class="card">
+    <h2>授权码列表</h2>
+    <button onclick="loadCodes()">刷新列表</button>
+    <table>
+      <thead>
+        <tr>
+          <th>授权码</th>
+          <th>配额 (数据/OCR)</th>
+          <th>有效期</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="codesList"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_BASE = '/api/admin';
+
+    function getHeaders() {
+      const token = document.getElementById('jwtToken').value;
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+      };
+    }
+
+    async function generateCodes() {
+      const data = {
+        data_quota: parseInt(document.getElementById('dataQuota').value),
+        ocr_quota: parseInt(document.getElementById('ocrQuota').value),
+        duration_days: parseInt(document.getElementById('durationDays').value),
+        count: parseInt(document.getElementById('count').value)
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/auth-codes`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (res.ok) {
+          const container = document.getElementById('generatedCodes');
+          container.classList.remove('hidden');
+          container.innerHTML = `<strong>生成成功！共 ${result.count} 个授权码：</strong><br>` +
+            result.codes.map(code => `<span class="code">${code}</span> <button class="copy-btn" onclick="copyCode('${code}')">复制</button>`).join('<br>');
+          loadCodes();
+        } else {
+          alert(result.error || '生成失败');
+        }
+      } catch (e) {
+        alert('请求失败: ' + e.message);
+      }
+    }
+
+    async function loadCodes() {
+      try {
+        const res = await fetch(`${API_BASE}/auth-codes`, { headers: getHeaders() });
+        const result = await res.json();
+        if (res.ok) {
+          const tbody = document.getElementById('codesList');
+          tbody.innerHTML = (result.data || []).map(c => `
+            <tr>
+              <td><span class="code">${c.code}</span> <button class="copy-btn" onclick="copyCode('${c.code}')">复制</button></td>
+              <td>${c.data_quota} / ${c.ocr_quota}</td>
+              <td>${c.duration_days} 天</td>
+              <td class="${c.used_by ? 'status-used' : 'status-unused'}">${c.used_by ? '已使用' : '未使用'}</td>
+              <td>${c.used_by ? '-' : `<button class="danger" onclick="deleteCode('${c.code}')">删除</button>`}</td>
+            </tr>
+          `).join('');
+        } else {
+          alert(result.error || '加载失败');
+        }
+      } catch (e) {
+        alert('请求失败: ' + e.message);
+      }
+    }
+
+    async function deleteCode(code) {
+      if (!confirm(`确定删除授权码 ${code}？`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/auth-codes/${code}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        const result = await res.json();
+        if (res.ok) {
+          alert('删除成功');
+          loadCodes();
+        } else {
+          alert(result.error || '删除失败');
+        }
+      } catch (e) {
+        alert('请求失败: ' + e.message);
+      }
+    }
+
+    function copyCode(code) {
+      navigator.clipboard.writeText(code).then(() => {
+        alert('已复制: ' + code);
+      });
+    }
+
+    // Auto load on token input
+    document.getElementById('jwtToken').addEventListener('change', loadCodes);
+  </script>
+</body>
+</html>

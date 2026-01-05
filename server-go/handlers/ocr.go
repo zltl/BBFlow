@@ -16,6 +16,23 @@ import (
 var ocrQueue = utils.NewRateLimitedQueue(10)
 
 func OCRRecognize(c *gin.Context) {
+	openid := c.GetString("openid")
+	if openid == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Unauthorized"})
+		return
+	}
+
+	// Check OCR quota
+	allowed, used, limit, err := checkQuota(context.Background(), openid, "ocr")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to check quota"})
+		return
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "已达到OCR识别次数上限", "used": used, "limit": limit})
+		return
+	}
+
 	file, header, err := c.Request.FormFile("image")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "No image file provided"})

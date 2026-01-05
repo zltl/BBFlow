@@ -8,6 +8,7 @@
     "pages/share-table/share-table",
     "pages/viewer/viewer",
     "pages/guide/guide",
+    "pages/settings/settings",
     "pages/logs/logs"
   ],
   "window": {
@@ -31,6 +32,10 @@
       {
         "pagePath": "pages/share/share",
         "text": "分享"
+      },
+      {
+        "pagePath": "pages/settings/settings",
+        "text": "设置"
       }
     ]
   },

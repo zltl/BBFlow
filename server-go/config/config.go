@@ -40,13 +40,14 @@ type LLMConfig struct {
 }
 
 type Config struct {
-	Port      int
-	Wx        WxConfig
-	DB        DBConfig
-	JWTSecret string
-	Baidu     BaiduConfig
-	OSS       OSSConfig
-	LLM       LLMConfig
+	Port        int
+	Wx          WxConfig
+	DB          DBConfig
+	JWTSecret   string
+	Baidu       BaiduConfig
+	OSS         OSSConfig
+	AdminSecret string
+	LLM         LLMConfig
 }
 
 var AppConfig Config
@@ -85,7 +86,8 @@ func Load() {
 			User:     getEnv("PG_USER", "postgres"),
 			Password: getEnv("PG_PASSWORD", ""),
 		},
-		JWTSecret: getEnv("JWT_SECRET", "default_secret_key_for_dev"),
+		JWTSecret:   getEnv("JWT_SECRET", "default_secret_key_for_dev"),
+		AdminSecret: getEnv("ADMIN_SECRET", ""),
 		Baidu: BaiduConfig{
 			APIKey:    getEnv("BAIDU_OCR_API_KEY", ""),
 			SecretKey: getEnv("BAIDU_OCR_SECRET_KEY", ""),

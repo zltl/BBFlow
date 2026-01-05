@@ -38,12 +38,18 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok", "message": "BBFlow Server is running"})
 	})
 
+	// Serve static files (admin page)
+	r.Static("/static", "./static")
+
 	// Auth routes
 	api := r.Group("/api")
 	{
 		auth := api.Group("/auth")
 		{
 			auth.POST("/login", handlers.Login)
+			auth.POST("/authorize", middleware.AuthMiddleware(), handlers.Authorize)
+			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetUserInfo)
+			auth.POST("/bind-referrer", middleware.AuthMiddleware(), handlers.BindReferrer)
 		}
 
 		// Records routes (require auth)
@@ -68,6 +74,19 @@ func main() {
 			share.POST("/generate-token", middleware.AuthMiddleware(), middleware.ShareGenLimiter(), handlers.GenerateShareToken)
 			share.GET("/view/:token", middleware.ShareViewLimiter(), handlers.ViewShareData)
 			share.GET("/html/:token", middleware.ShareViewLimiter(), handlers.ViewShareHTML)
+		}
+
+		// Feedback routes (authorized users only)
+		api.POST("/feedback", middleware.AuthMiddleware(), handlers.PostFeedback)
+
+		// Admin routes (require login + is_admin)
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthMiddleware())
+		admin.Use(handlers.AdminAuthMiddleware())
+		{
+			admin.POST("/auth-codes", handlers.GenerateAuthCodes)
+			admin.GET("/auth-codes", handlers.ListAuthCodes)
+			admin.DELETE("/auth-codes/:code", handlers.DeleteAuthCode)
 		}
 	}
 
