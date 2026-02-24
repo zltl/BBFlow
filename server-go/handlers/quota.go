@@ -2,59 +2,127 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"time"
 
 	"bbflow-server/db"
 )
 
 const (
-	DefaultDataQuota = 14
-	DefaultOCRQuota  = 5
+	// Free user limits (total, lifetime)
+	FreeDataQuota = 30
+	FreeOCRQuota  = 5
+
+	// Paid/sponsored user limits (per day)
+	PaidDailyDataQuota = 30
+	PaidDailyOCRQuota  = 60
 )
 
-type RateLimitConfig struct {
-	Authorized bool `json:"authorized"`
-	DataQuota  int  `json:"data_quota"`
-	OCRQuota   int  `json:"ocr_quota"`
+// Keep legacy constant name for backward compat where referenced
+const DefaultDataQuota = FreeDataQuota
+const DefaultOCRQuota = FreeOCRQuota
+
+// UserPaidStatus represents the paid status of a user
+type UserPaidStatus struct {
+	IsPaid      bool       // directly paid (paid_until > now)
+	IsSponsored bool       // invited by a paid user whose paid_until > now
+	PaidUntil   *time.Time // the user's own paid_until
+	SponsorID   *string    // who sponsored this user
 }
 
-func checkQuota(ctx context.Context, openid string, quotaType string) (bool, int, int, error) {
-	// 1. Get user config
-	var rlConfig sqlNullString
-	err := db.Pool.QueryRow(ctx, `SELECT rate_limit_config FROM users WHERE openid = $1`, openid).Scan(&rlConfig)
+// getUserPaidStatus determines if the user is paid, sponsored, or free
+func getUserPaidStatus(ctx context.Context, openid string) (*UserPaidStatus, error) {
+	var paidUntil *time.Time
+	var sponsorID *string
+
+	err := db.Pool.QueryRow(ctx, `
+		SELECT paid_until, sponsor_id FROM users WHERE openid = $1
+	`, openid).Scan(&paidUntil, &sponsorID)
 	if err != nil {
-		return false, 0, 0, fmt.Errorf("failed to get user config: %w", err)
+		return nil, fmt.Errorf("failed to get user status: %w", err)
 	}
 
-	limit := 0
-	if quotaType == "data" {
-		limit = DefaultDataQuota
-	} else {
-		limit = DefaultOCRQuota
+	status := &UserPaidStatus{
+		PaidUntil: paidUntil,
+		SponsorID: sponsorID,
 	}
 
-	if rlConfig.Valid && rlConfig.String != "" {
-		var cfg RateLimitConfig
-		if err := json.Unmarshal([]byte(rlConfig.String), &cfg); err == nil {
-			if quotaType == "data" && cfg.DataQuota > 0 {
-				limit = cfg.DataQuota
-			} else if quotaType == "ocr" && cfg.OCRQuota > 0 {
-				limit = cfg.OCRQuota
-			}
+	// Check if directly paid
+	if paidUntil != nil && paidUntil.After(time.Now()) {
+		status.IsPaid = true
+		return status, nil
+	}
+
+	// Check if sponsored (sponsor's paid_until > now)
+	if sponsorID != nil && *sponsorID != "" {
+		var sponsorPaidUntil *time.Time
+		err := db.Pool.QueryRow(ctx, `
+			SELECT paid_until FROM users WHERE openid = $1
+		`, *sponsorID).Scan(&sponsorPaidUntil)
+		if err == nil && sponsorPaidUntil != nil && sponsorPaidUntil.After(time.Now()) {
+			status.IsSponsored = true
+			return status, nil
 		}
 	}
 
-	// 2. Count usage
+	return status, nil
+}
+
+// checkQuota checks if user is within their quota limits.
+// For free users: total count across all time.
+// For paid/sponsored users: count for today only.
+// Returns (allowed, used, limit, error)
+func checkQuota(ctx context.Context, openid string, quotaType string) (bool, int, int, error) {
+	status, err := getUserPaidStatus(ctx, openid)
+	if err != nil {
+		return false, 0, 0, err
+	}
+
+	isPaidOrSponsored := status.IsPaid || status.IsSponsored
+
 	var count int
-	if quotaType == "data" {
-		err = db.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM bp_records WHERE user_id = $1`, openid).Scan(&count)
+	if isPaidOrSponsored {
+		// Paid/sponsored: count today's usage only
+		todayStart := time.Now().Truncate(24 * time.Hour)
+		if quotaType == "data" {
+			err = db.Pool.QueryRow(ctx,
+				`SELECT COUNT(*) FROM bp_records WHERE user_id = $1 AND created_at >= $2`,
+				openid, todayStart).Scan(&count)
+		} else {
+			err = db.Pool.QueryRow(ctx,
+				`SELECT COUNT(*) FROM ocr_logs WHERE user_id = $1 AND created_at >= $2`,
+				openid, todayStart).Scan(&count)
+		}
 	} else {
-		err = db.Pool.QueryRow(ctx, `SELECT COUNT(*) FROM ocr_logs WHERE user_id = $1`, openid).Scan(&count)
+		// Free user: count total usage
+		if quotaType == "data" {
+			err = db.Pool.QueryRow(ctx,
+				`SELECT COUNT(*) FROM bp_records WHERE user_id = $1`,
+				openid).Scan(&count)
+		} else {
+			err = db.Pool.QueryRow(ctx,
+				`SELECT COUNT(*) FROM ocr_logs WHERE user_id = $1`,
+				openid).Scan(&count)
+		}
 	}
 
 	if err != nil {
 		return false, 0, 0, fmt.Errorf("failed to count usage: %w", err)
+	}
+
+	var limit int
+	if isPaidOrSponsored {
+		if quotaType == "data" {
+			limit = PaidDailyDataQuota
+		} else {
+			limit = PaidDailyOCRQuota
+		}
+	} else {
+		if quotaType == "data" {
+			limit = FreeDataQuota
+		} else {
+			limit = FreeOCRQuota
+		}
 	}
 
 	return count < limit, count, limit, nil

@@ -25,13 +25,14 @@ Page({
     this.initPickers();
     this.checkFirstUse();
     
-    // 处理推荐码参数，保存到 storage，待登录后绑定
-    if (options.referral) {
-      wx.setStorageSync('pending_referral', options.referral);
+    // Save activation/invite params for app.ts to process
+    if (options && options.activate) {
+      wx.setStorageSync('pending_activate', options.activate);
     }
-    // 尝试绑定存储的推荐码
-    this.tryBindPendingReferral();
-    
+    if (options && options.invite) {
+      wx.setStorageSync('pending_invite', options.invite);
+    }
+
     const now = new Date();
     const year = now.getFullYear();
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -43,24 +44,6 @@ Page({
       date: `${year}-${month}-${day}`,
       time: `${hour}:${minute}`
     });
-  },
-
-  async tryBindPendingReferral() {
-    const referralCode = wx.getStorageSync('pending_referral');
-    if (!referralCode) return;
-    
-    const token = wx.getStorageSync('token');
-    if (!token) return; // 还没登录
-    
-    try {
-      await request({ url: API_ENDPOINTS.BIND_REFERRER, method: 'POST', data: { referral_code: referralCode } });
-      wx.removeStorageSync('pending_referral');
-      wx.showToast({ title: '已绑定推荐人', icon: 'success' });
-    } catch (err) {
-      console.log('绑定推荐人失败:', err);
-      // 如果推荐码无效，也清除
-      wx.removeStorageSync('pending_referral');
-    }
   },
 
   initPickers() {

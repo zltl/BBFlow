@@ -1,7 +1,7 @@
 .container { padding: 16px; }
 .section { margin-bottom: 20px; }
 .title { font-weight: bold; margin-bottom: 8px; }
-.note { color: #666; font-size: 12px; }
+.note { color: #666; font-size: 12px; line-height: 1.8; }
 input, textarea, picker, button { display: block; width: 100%; margin-bottom: 8px; }
 textarea { height: 120px; }
 .id-row { display: flex; align-items: center; background: #f5f5f5; padding: 10px; border-radius: 4px; }
@@ -9,13 +9,37 @@ textarea { height: 120px; }
 .copy-btn { flex-shrink: 0; margin-left: 10px; }
 .share-btn { flex-shrink: 0; margin-left: 5px; background: #07c160; color: white; }
 .picker-view { padding: 10px; background: #f5f5f5; border-radius: 4px; }
+
+/* Status section */
+.status-section { background: #f0f5ff; padding: 15px; border-radius: 8px; border: 1px solid #adc6ff; }
+.status-row { display: flex; align-items: center; margin-bottom: 6px; }
+.status-label { color: #666; font-size: 14px; width: 80px; }
+.status-value { font-size: 14px; font-weight: 500; }
+.status-paid { color: #52c41a; }
+.status-sponsored { color: #1890ff; }
+.status-free { color: #999; }
+
+/* Invite section */
+.invite-section { background: #f6ffed; padding: 15px; border-radius: 8px; border: 1px solid #b7eb8f; }
+.invite-info { color: #666; font-size: 13px; margin-bottom: 10px; }
+.create-invite-btn { margin-bottom: 15px; }
+.invite-list { margin-top: 10px; }
+.invite-item { background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #e8e8e8; }
+.invite-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.invite-code { font-family: monospace; font-size: 14px; font-weight: bold; }
+.invite-status { font-size: 12px; }
+.invite-status.used { color: #52c41a; }
+.invite-status.unused { color: #faad14; }
+.invite-item-detail { margin-bottom: 6px; }
+.invite-detail-text { font-size: 12px; color: #999; }
+.invite-item-actions { display: flex; gap: 8px; }
+.invite-item-actions button { flex: none; width: auto; margin-bottom: 0; }
+.invite-tip { color: #666; font-size: 12px; margin-top: 10px; line-height: 1.6; }
+
+/* Admin section */
 .admin-section { background: #fff7e6; padding: 15px; border-radius: 8px; border: 1px solid #ffd591; }
 .form-row { display: flex; align-items: center; margin-bottom: 10px; }
 .form-row text { width: 80px; font-size: 14px; }
 .form-row input { flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 8px; }
 .generated-codes { margin-top: 15px; background: #f6ffed; border: 1px solid #b7eb8f; padding: 10px; border-radius: 4px; }
 .code-item { font-family: monospace; background: #fff; padding: 8px; margin: 5px 0; border-radius: 4px; border: 1px solid #d9d9d9; }
-.referral-section { background: #e6f7ff; padding: 15px; border-radius: 8px; border: 1px solid #91d5ff; }
-.referral-code { flex: 1; font-family: monospace; font-size: 18px; font-weight: bold; color: #1890ff; }
-.referral-tip { color: #666; font-size: 12px; margin-top: 8px; }
-.referrer-bound { color: #52c41a; font-size: 14px; }

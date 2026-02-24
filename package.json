@@ -1,6 +1,6 @@
 {
   "name": "bbflow-miniprogram",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "description": "安压宝 - 高血压健康管理小程序",
   "scripts": {
     "dev": "tsc -w",

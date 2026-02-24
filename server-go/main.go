@@ -49,7 +49,6 @@ func main() {
 			auth.POST("/login", handlers.Login)
 			auth.POST("/authorize", middleware.AuthMiddleware(), handlers.Authorize)
 			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetUserInfo)
-			auth.POST("/bind-referrer", middleware.AuthMiddleware(), handlers.BindReferrer)
 		}
 
 		// Records routes (require auth)
@@ -68,7 +67,7 @@ func main() {
 			ocr.POST("/recognize", middleware.RecordLimiter(), handlers.OCRRecognize)
 		}
 
-		// Share routes
+		// Share routes (data sharing, untouched)
 		share := api.Group("/share")
 		{
 			share.POST("/generate-token", middleware.AuthMiddleware(), middleware.ShareGenLimiter(), handlers.GenerateShareToken)
@@ -76,7 +75,16 @@ func main() {
 			share.GET("/html/:token", middleware.ShareViewLimiter(), handlers.ViewShareHTML)
 		}
 
-		// Feedback routes (authorized users only)
+		// Invite routes (distribution system)
+		invite := api.Group("/invite")
+		invite.Use(middleware.AuthMiddleware())
+		{
+			invite.POST("/create", handlers.CreateInviteLink)
+			invite.GET("/list", handlers.ListInviteLinks)
+			invite.POST("/use", handlers.UseInviteLink)
+		}
+
+		// Feedback routes (paid users only)
 		api.POST("/feedback", middleware.AuthMiddleware(), handlers.PostFeedback)
 
 		// Admin routes (require login + is_admin)
@@ -84,9 +92,9 @@ func main() {
 		admin.Use(middleware.AuthMiddleware())
 		admin.Use(handlers.AdminAuthMiddleware())
 		{
-			admin.POST("/auth-codes", handlers.GenerateAuthCodes)
-			admin.GET("/auth-codes", handlers.ListAuthCodes)
-			admin.DELETE("/auth-codes/:code", handlers.DeleteAuthCode)
+			admin.POST("/activation-links", handlers.GenerateActivationLinks)
+			admin.GET("/activation-links", handlers.ListActivationLinks)
+			admin.DELETE("/activation-links/:code", handlers.DeleteActivationLink)
 		}
 	}
 

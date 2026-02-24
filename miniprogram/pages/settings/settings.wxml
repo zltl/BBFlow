@@ -1,4 +1,5 @@
 <view class="container">
+  <!-- 我的ID -->
   <view class="section">
     <view class="title">我的ID</view>
     <view class="id-row">
@@ -7,35 +8,70 @@
     </view>
   </view>
 
-  <!-- 我的推荐码 -->
-  <view class="section referral-section">
-    <view class="title">🎁 我的推荐码</view>
-    <view class="id-row">
-      <text class="referral-code">{{referralCode || '加载中...'}}</text>
-      <button class="copy-btn" size="mini" bindtap="copyReferralCode" wx:if="{{referralCode}}">复制</button>
-      <button class="share-btn" size="mini" open-type="share" wx:if="{{referralCode}}">分享</button>
+  <!-- 账户状态 -->
+  <view class="section status-section">
+    <view class="title">📊 账户状态</view>
+    <!--view class="status-row">
+      <text class="status-label">用户类型：</text>
+      <text class="status-value {{isPaid ? 'status-paid' : isSponsored ? 'status-sponsored' : 'status-free'}}">
+        {{isPaid ? '付费用户' : isSponsored ? '受邀用户' : '免费用户'}}
+      </text>
+    </view -->
+    <view class="status-row" wx:if="{{isPaid && paidUntil}}">
+      <text class="status-label">到期时间：</text>
+      <text class="status-value">{{paidUntil}}</text>
     </view>
-    <view class="referral-tip">分享给好友，好友注册后输入你的推荐码</view>
+    <view class="status-row">
+      <text class="status-label">数据配额：</text>
+      <text class="status-value">{{quotaIsDaily ? '每天' : '总共'}} {{dataQuota}} 条</text>
+    </view>
+    <view class="status-row">
+      <text class="status-label">OCR配额：</text>
+      <text class="status-value">{{quotaIsDaily ? '每天' : '总共'}} {{ocrQuota}} 次</text>
+    </view>
   </view>
 
-  <!-- 输入推荐码 -->
-  <view class="section" wx:if="{{!hasReferrer}}">
-    <view class="title">输入推荐码</view>
-    <input placeholder="请输入好友的推荐码" bindinput="onReferrerCodeInput" value="{{referrerCode}}" />
-    <button bindtap="onBindReferrer">绑定推荐人</button>
-  </view>
-  <view class="section" wx:else>
-    <view class="title">推荐人</view>
-    <view class="referrer-bound">✅ 已绑定推荐人</view>
+  <!-- 激活码输入（免费/受邀用户可见） -->
+  <view class="section" wx:if="{{!isPaid}}">
+    <view class="title">激活码</view>
+    <input placeholder="请输入激活码" bindinput="onActivationCodeInput" value="{{activationCode}}" />
+    <button bindtap="onSubmitActivationCode">提交激活码</button>
   </view>
 
-  <view class="section">
-    <view class="title">授权码激活</view>
-    <input placeholder="请输入授权码" bindinput="onCodeInput" value="{{code}}" />
-    <button bindtap="onSubmitCode">提交授权码</button>
+  <!-- 我的邀请链接（仅付费用户可见） -->
+  <view class="section invite-section" wx:if="{{isPaid}}">
+    <view class="title">🔗 我的邀请链接</view>
+    <view class="invite-info">
+      <text>已创建 {{inviteUsed}} / {{inviteLimit}} 个</text>
+    </view>
+
+    <button type="primary" size="mini" bindtap="onCreateInviteLink" disabled="{{inviteUsed >= inviteLimit}}" class="create-invite-btn">
+      {{inviteUsed >= inviteLimit ? '已达上限' : '创建邀请链接'}}
+    </button>
+
+    <view class="invite-list" wx:if="{{inviteLinks.length > 0}}">
+      <view class="invite-item" wx:for="{{inviteLinks}}" wx:key="id">
+        <view class="invite-item-header">
+          <text class="invite-code">{{item.code}}</text>
+          <text class="invite-status {{item.used_by ? 'used' : 'unused'}}">
+            {{item.used_by ? '✅ 已使用' : '⏳ 未使用'}}
+          </text>
+        </view>
+        <view class="invite-item-detail" wx:if="{{item.used_at}}">
+          <text class="invite-detail-text">使用时间：{{item.used_at}}</text>
+        </view>
+        <view class="invite-item-actions">
+          <button size="mini" class="copy-btn" bindtap="copyInviteLink" data-code="{{item.code}}">复制链接</button>
+          <button size="mini" class="share-btn" open-type="share" bindtap="onShareInviteLink" data-code="{{item.code}}" wx:if="{{!item.used_by}}">分享</button>
+        </view>
+      </view>
+    </view>
+
+    <view class="invite-tip">邀请链接每个只能使用一次，被邀请的用户将享有与你相同的付费权益（但不能创建邀请链接）。</view>
   </view>
 
-  <view class="section" wx:if="{{authorized}}">
+  <!-- 提交反馈（仅付费/受邀用户） -->
+  <view class="section" wx:if="{{isPaid || isSponsored}}">
     <view class="title">提交功能需求 / 反馈</view>
     <picker mode="selector" range="{{types}}" bindchange="onTypeChange">
       <view class="picker-view">{{selectedTypeDisplay}}</view>
@@ -47,34 +83,57 @@
 
   <!-- 管理员区块 -->
   <view class="section admin-section" wx:if="{{isAdmin}}">
-    <view class="title">🔐 管理员 - 生成授权码</view>
-    <view class="form-row">
-      <text>数据配额</text>
-      <input type="number" value="{{adminDataQuota}}" bindinput="onAdminDataQuotaInput" />
-    </view>
-    <view class="form-row">
-      <text>OCR配额</text>
-      <input type="number" value="{{adminOcrQuota}}" bindinput="onAdminOcrQuotaInput" />
-    </view>
+    <view class="title">🔐 管理员 - 生成激活链接</view>
     <view class="form-row">
       <text>有效天数</text>
       <input type="number" value="{{adminDays}}" bindinput="onAdminDaysInput" />
     </view>
     <view class="form-row">
+      <text>邀请名额</text>
+      <input type="number" value="{{adminInviteLinks}}" bindinput="onAdminInviteLinksInput" />
+    </view>
+    <view class="form-row">
       <text>生成数量</text>
       <input type="number" value="{{adminCount}}" bindinput="onAdminCountInput" />
     </view>
-    <button type="primary" bindtap="onGenerateCodes">生成授权码</button>
+    <button type="primary" bindtap="onGenerateActivationLinks">生成激活链接</button>
     
     <view class="generated-codes" wx:if="{{generatedCodes.length > 0}}">
-      <view class="title">已生成的授权码（点击复制）</view>
-      <view class="code-item" wx:for="{{generatedCodes}}" wx:key="*this" bindtap="copyCode" data-code="{{item}}">
+      <view class="title">刚生成的激活码（点击复制链接）</view>
+      <view class="code-item" wx:for="{{generatedCodes}}" wx:key="*this" bindtap="copyActivationLink" data-code="{{item}}">
         {{item}}
+      </view>
+    </view>
+
+    <!-- 所有激活链接列表 -->
+    <view class="activation-list" wx:if="{{allActivationLinks.length > 0}}">
+      <view class="title" style="margin-top:15px;">📋 全部激活链接</view>
+      <view class="invite-item" wx:for="{{allActivationLinks}}" wx:key="id">
+        <view class="invite-item-header">
+          <text class="invite-code">{{item.code}}</text>
+          <text class="invite-status {{item.used_by ? 'used' : 'unused'}}">
+            {{item.used_by ? '✅ 已使用' : '⏳ 未使用'}}
+          </text>
+        </view>
+        <view class="invite-item-detail">
+          <text class="invite-detail-text">{{item.duration_days}}天 / {{item.max_invite_links}}个邀请名额</text>
+        </view>
+        <view class="invite-item-detail" wx:if="{{item.used_by}}">
+          <text class="invite-detail-text">使用者：{{item.used_by}}</text>
+        </view>
+        <view class="invite-item-detail" wx:if="{{item.used_at}}">
+          <text class="invite-detail-text">使用时间：{{item.used_at}}</text>
+        </view>
+        <view class="invite-item-actions" wx:if="{{!item.used_by}}">
+          <button size="mini" class="copy-btn" bindtap="copyActivationLink" data-code="{{item.code}}">复制链接</button>
+          <button size="mini" class="copy-btn" bindtap="copyCode" data-code="{{item.code}}">复制码</button>
+        </view>
       </view>
     </view>
   </view>
 
   <view class="note">
-    <text>默认允许添加 {{defaults.DATA_ENTRIES}} 条数据，{{defaults.OCR_TIMES}} 次OCR识别。</text>
+    <text>免费用户：总共 {{defaults.DATA_ENTRIES}} 条数据，{{defaults.OCR_TIMES}} 次OCR识别。</text>
+    <text>付费用户：每天 {{paidDefaults.DATA_ENTRIES}} 条数据，{{paidDefaults.OCR_TIMES}} 次OCR识别。</text>
   </view>
 </view>

@@ -12,22 +12,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type GenerateCodeRequest struct {
-	DataQuota    int `json:"data_quota"`
-	OCRQuota     int `json:"ocr_quota"`
-	DurationDays int `json:"duration_days"`
-	Count        int `json:"count"` // 批量生成数量
+type GenerateActivationRequest struct {
+	DurationDays   int `json:"duration_days"`
+	MaxInviteLinks int `json:"max_invite_links"`
+	Count          int `json:"count"`
 }
 
-type AuthCode struct {
-	ID           int        `json:"id"`
-	Code         string     `json:"code"`
-	DataQuota    int        `json:"data_quota"`
-	OCRQuota     int        `json:"ocr_quota"`
-	DurationDays int        `json:"duration_days"`
-	UsedBy       *string    `json:"used_by"`
-	UsedAt       *time.Time `json:"used_at"`
-	CreatedAt    time.Time  `json:"created_at"`
+type ActivationLink struct {
+	ID             int        `json:"id"`
+	Code           string     `json:"code"`
+	DurationDays   int        `json:"duration_days"`
+	MaxInviteLinks int        `json:"max_invite_links"`
+	UsedBy         *string    `json:"used_by"`
+	UsedAt         *time.Time `json:"used_at"`
+	CreatedAt      time.Time  `json:"created_at"`
 }
 
 // AdminAuthMiddleware checks if the logged-in user is an admin
@@ -58,38 +56,35 @@ func generateRandomCode() string {
 	return hex.EncodeToString(bytes)
 }
 
-// GenerateAuthCodes creates new authorization codes
-func GenerateAuthCodes(c *gin.Context) {
-	var req GenerateCodeRequest
+// GenerateActivationLinks creates new activation links
+func GenerateActivationLinks(c *gin.Context) {
+	var req GenerateActivationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
 	// Set defaults
-	if req.DataQuota <= 0 {
-		req.DataQuota = 10000
-	}
-	if req.OCRQuota <= 0 {
-		req.OCRQuota = 10000
-	}
 	if req.DurationDays <= 0 {
 		req.DurationDays = 365
+	}
+	if req.MaxInviteLinks <= 0 {
+		req.MaxInviteLinks = 5
 	}
 	if req.Count <= 0 {
 		req.Count = 1
 	}
 	if req.Count > 100 {
-		req.Count = 100 // 限制单次最多生成100个
+		req.Count = 100
 	}
 
 	codes := make([]string, 0, req.Count)
 	for i := 0; i < req.Count; i++ {
 		code := generateRandomCode()
 		_, err := db.Pool.Exec(context.Background(), `
-			INSERT INTO auth_codes (code, data_quota, ocr_quota, duration_days)
-			VALUES ($1, $2, $3, $4)
-		`, code, req.DataQuota, req.OCRQuota, req.DurationDays)
+			INSERT INTO activation_links (code, duration_days, max_invite_links)
+			VALUES ($1, $2, $3)
+		`, code, req.DurationDays, req.MaxInviteLinks)
 		if err != nil {
 			continue // skip duplicates
 		}
@@ -97,38 +92,38 @@ func GenerateAuthCodes(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "授权码生成成功",
+		"message": "激活链接生成成功",
 		"codes":   codes,
 		"count":   len(codes),
 	})
 }
 
-// ListAuthCodes returns all authorization codes
-func ListAuthCodes(c *gin.Context) {
+// ListActivationLinks returns all activation links
+func ListActivationLinks(c *gin.Context) {
 	rows, err := db.Pool.Query(context.Background(), `
-		SELECT id, code, data_quota, ocr_quota, duration_days, used_by, used_at, created_at
-		FROM auth_codes ORDER BY created_at DESC
+		SELECT id, code, duration_days, max_invite_links, used_by, used_at, created_at
+		FROM activation_links ORDER BY created_at DESC
 	`)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query codes"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query activation links"})
 		return
 	}
 	defer rows.Close()
 
-	var codes []AuthCode
+	var links []ActivationLink
 	for rows.Next() {
-		var ac AuthCode
-		if err := rows.Scan(&ac.ID, &ac.Code, &ac.DataQuota, &ac.OCRQuota, &ac.DurationDays, &ac.UsedBy, &ac.UsedAt, &ac.CreatedAt); err != nil {
+		var al ActivationLink
+		if err := rows.Scan(&al.ID, &al.Code, &al.DurationDays, &al.MaxInviteLinks, &al.UsedBy, &al.UsedAt, &al.CreatedAt); err != nil {
 			continue
 		}
-		codes = append(codes, ac)
+		links = append(links, al)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": codes})
+	c.JSON(http.StatusOK, gin.H{"data": links})
 }
 
-// DeleteAuthCode deletes an unused authorization code
-func DeleteAuthCode(c *gin.Context) {
+// DeleteActivationLink deletes an unused activation link
+func DeleteActivationLink(c *gin.Context) {
 	code := c.Param("code")
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing code"})
@@ -136,17 +131,17 @@ func DeleteAuthCode(c *gin.Context) {
 	}
 
 	result, err := db.Pool.Exec(context.Background(), `
-		DELETE FROM auth_codes WHERE code = $1 AND used_by IS NULL
+		DELETE FROM activation_links WHERE code = $1 AND used_by IS NULL
 	`, code)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete code"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete link"})
 		return
 	}
 
 	if result.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Code not found or already used"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Link not found or already used"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "授权码已删除"})
+	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
 }
