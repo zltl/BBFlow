@@ -11,16 +11,18 @@ import (
 )
 
 type UserInfoResponse struct {
-	OpenID         string     `json:"openid"`
-	IsAdmin        bool       `json:"is_admin"`
-	IsPaid         bool       `json:"is_paid"`
-	IsSponsored    bool       `json:"is_sponsored"`
-	PaidUntil      *time.Time `json:"paid_until"`
-	SponsorID      *string    `json:"sponsor_id"`
-	MaxInviteLinks int        `json:"max_invite_links"`
-	DataQuota      int        `json:"data_quota"`
-	OCRQuota       int        `json:"ocr_quota"`
-	QuotaIsDaily   bool       `json:"quota_is_daily"`
+	OpenID          string     `json:"openid"`
+	IsAdmin         bool       `json:"is_admin"`
+	IsPaid          bool       `json:"is_paid"`
+	IsSponsored     bool       `json:"is_sponsored"`
+	PaidUntil       *time.Time `json:"paid_until"`
+	SponsorID       *string    `json:"sponsor_id"`
+	MaxInviteLinks  int        `json:"max_invite_links"`
+	DataQuota       int        `json:"data_quota"`
+	OCRQuota        int        `json:"ocr_quota"`
+	QuotaIsDaily    bool       `json:"quota_is_daily"`
+	DataQuotaPeriod string     `json:"data_quota_period"` // "daily", "monthly", "total"
+	OCRQuotaPeriod  string     `json:"ocr_quota_period"`  // "daily", "monthly", "total"
 }
 
 func GetUserInfo(c *gin.Context) {
@@ -63,14 +65,24 @@ func GetUserInfo(c *gin.Context) {
 	}
 
 	// Set quota info based on status
-	if status.IsPaid || status.IsSponsored {
+	if isAdmin {
+		resp.DataQuota = AdminDailyDataQuota
+		resp.OCRQuota = AdminDailyOCRQuota
+		resp.QuotaIsDaily = true
+		resp.DataQuotaPeriod = "daily"
+		resp.OCRQuotaPeriod = "daily"
+	} else if status.IsPaid || status.IsSponsored {
 		resp.DataQuota = PaidDailyDataQuota
 		resp.OCRQuota = PaidDailyOCRQuota
 		resp.QuotaIsDaily = true
+		resp.DataQuotaPeriod = "daily"
+		resp.OCRQuotaPeriod = "daily"
 	} else {
-		resp.DataQuota = FreeDataQuota
-		resp.OCRQuota = FreeOCRQuota
+		resp.DataQuota = FreeDailyDataQuota
+		resp.OCRQuota = FreeMonthlyOCRQuota
 		resp.QuotaIsDaily = false
+		resp.DataQuotaPeriod = "daily"
+		resp.OCRQuotaPeriod = "monthly"
 	}
 
 	c.JSON(http.StatusOK, resp)

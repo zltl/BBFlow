@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, DEFAULT_LIMITS, PAID_DAILY_LIMITS } from '../../config'
+import { API_ENDPOINTS, DEFAULT_LIMITS, PAID_DAILY_LIMITS, ADMIN_DAILY_LIMITS } from '../../config'
 import { request } from '../../utils/request'
 
 interface InviteLink {
@@ -30,8 +30,11 @@ Component({
     dataQuota: DEFAULT_LIMITS.DATA_ENTRIES,
     ocrQuota: DEFAULT_LIMITS.OCR_TIMES,
     quotaIsDaily: false,
+    dataQuotaPeriod: 'daily',
+    ocrQuotaPeriod: 'monthly',
     defaults: DEFAULT_LIMITS,
     paidDefaults: PAID_DAILY_LIMITS,
+    adminDefaults: ADMIN_DAILY_LIMITS,
 
     // Invite links
     inviteLinks: [] as InviteLink[],
@@ -77,6 +80,8 @@ Component({
           dataQuota: res.data_quota || DEFAULT_LIMITS.DATA_ENTRIES,
           ocrQuota: res.ocr_quota || DEFAULT_LIMITS.OCR_TIMES,
           quotaIsDaily: res.quota_is_daily || false,
+          dataQuotaPeriod: res.data_quota_period || 'daily',
+          ocrQuotaPeriod: res.ocr_quota_period || 'monthly',
         })
         // Load invite links if paid user
         if (isPaid) {

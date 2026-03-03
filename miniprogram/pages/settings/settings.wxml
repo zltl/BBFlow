@@ -23,11 +23,11 @@
     </view>
     <view class="status-row">
       <text class="status-label">数据配额：</text>
-      <text class="status-value">{{quotaIsDaily ? '每天' : '总共'}} {{dataQuota}} 条</text>
+      <text class="status-value">{{dataQuotaPeriod === 'daily' ? '每天' : dataQuotaPeriod === 'monthly' ? '每月' : '总共'}} {{dataQuota}} 条</text>
     </view>
     <view class="status-row">
       <text class="status-label">OCR配额：</text>
-      <text class="status-value">{{quotaIsDaily ? '每天' : '总共'}} {{ocrQuota}} 次</text>
+      <text class="status-value">{{ocrQuotaPeriod === 'daily' ? '每天' : ocrQuotaPeriod === 'monthly' ? '每月' : '总共'}} {{ocrQuota}} 次</text>
     </view>
   </view>
 
@@ -133,7 +133,7 @@
   </view>
 
   <view class="note">
-    <text>免费用户：总共 {{defaults.DATA_ENTRIES}} 条数据，{{defaults.OCR_TIMES}} 次OCR识别。</text>
+    <text>免费用户：每天 {{defaults.DATA_ENTRIES}} 条数据，每月 {{defaults.OCR_TIMES}} 次OCR识别。</text>
     <text>付费用户：每天 {{paidDefaults.DATA_ENTRIES}} 条数据，{{paidDefaults.OCR_TIMES}} 次OCR识别。</text>
   </view>
 </view>
