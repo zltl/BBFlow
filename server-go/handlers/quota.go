@@ -10,7 +10,7 @@ import (
 
 const (
 	// Free user limits
-	FreeDailyDataQuota  = 10 // per day
+	FreeDailyDataQuota  = 30 // per day
 	FreeMonthlyOCRQuota = 5  // per month
 
 	// Paid/sponsored user limits (per day)
@@ -19,7 +19,7 @@ const (
 
 	// Admin limits (per day)
 	AdminDailyDataQuota = 100
-	AdminDailyOCRQuota  = 30
+	AdminDailyOCRQuota  = 1000
 )
 
 // Keep legacy constant name for backward compat where referenced
