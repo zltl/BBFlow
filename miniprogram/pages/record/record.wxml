@@ -1,5 +1,4 @@
 <view class="container">
-  <!-- OCR Section -->
   <view class="ocr-section">
     <view class="ocr-card" bindtap="onOCRScan">
       <view class="ocr-content">
@@ -7,11 +6,31 @@
           <text class="ocr-icon">📷</text>
         </view>
         <view class="ocr-info">
-          <text class="ocr-title">扫码/拍照识别</text>
-          <text class="ocr-desc">一键录入，智能识别屏幕读数</text>
+          <text class="ocr-title">拍照识别</text>
+          <text class="ocr-desc">一键录入，识别后可继续核对和修正</text>
         </view>
         <view class="ocr-arrow">›</view>
       </view>
+    </view>
+  </view>
+
+  <view class="ocr-review-card" wx:if="{{ocrLogId}}">
+    <view class="ocr-review-head">
+      <view>
+        <text class="ocr-review-title">OCR 识别结果</text>
+        <text class="ocr-review-subtitle">{{ocrStatusText}}</text>
+      </view>
+      <view class="confidence-badge {{ocrNeedsReview ? 'warning' : 'safe'}}">
+        {{ocrNeedsReview ? '需核对' : '可直接保存'}}
+      </view>
+    </view>
+    <view class="ocr-review-meta">
+      <text>置信度：{{ocrConfidence}}</text>
+      <text>策略：{{ocrExtractionStrategy || '规则解析'}}</text>
+    </view>
+    <view class="ocr-review-actions">
+      <button size="mini" class="ocr-confirm-btn" bindtap="confirmOcrResult" disabled="{{ocrVerified}}">{{ocrVerified ? '已确认' : '确认当前表单值'}}</button>
+      <button size="mini" class="ocr-clear-btn" bindtap="clearOCRState">清除 OCR 状态</button>
     </view>
   </view>
 
@@ -20,15 +39,18 @@
       <text class="guide-icon">📖</text>
       <text>如何正确测量血压？</text>
     </view>
+    <view class="guide-link" bindtap="goToMedications">
+      <text class="guide-icon">💊</text>
+      <text>去管理药物</text>
+    </view>
   </view>
 
   <form bindsubmit="saveRecord">
-    <!-- Blood Pressure & Heart Rate -->
     <view class="form-group">
       <view class="form-item">
         <view class="label-group">
-            <text class="label-main">血压</text>
-            <text class="label-sub">mmHg</text>
+          <text class="label-main">血压</text>
+          <text class="label-sub">mmHg</text>
         </view>
         <picker mode="multiSelector" range="{{bpRange}}" value="{{bpIndex}}" bindchange="onBPChange" class="picker-full" header-text="收缩压 | 舒张压">
           <view class="picker-display {{systolic ? '' : 'placeholder'}}">
@@ -38,8 +60,8 @@
       </view>
       <view class="form-item">
         <view class="label-group">
-            <text class="label-main">心率</text>
-            <text class="label-sub">❤️</text>
+          <text class="label-main">心率</text>
+          <text class="label-sub">bpm</text>
         </view>
         <picker mode="selector" range="{{hrRange}}" value="{{hrIndex}}" bindchange="onHRChange" class="picker-full" header-text="心率">
           <view class="picker-display {{heartRate ? '' : 'placeholder'}}">
@@ -49,51 +71,39 @@
       </view>
     </view>
 
-    <!-- Time -->
     <view class="form-group">
       <view class="form-item">
         <text class="label">测量时间</text>
         <view class="time-picker-group">
           <picker mode="date" value="{{date}}" bindchange="bindDateChange">
-            <view class="picker-tag">
-              {{date}}
-            </view>
+            <view class="picker-tag">{{date}}</view>
           </picker>
           <picker mode="time" value="{{time}}" bindchange="bindTimeChange">
-            <view class="picker-tag">
-              {{time}}
-            </view>
+            <view class="picker-tag">{{time}}</view>
           </picker>
         </view>
       </view>
     </view>
 
-    <!-- Tags -->
     <view class="form-group">
       <view class="section-header">
         <text class="section-title">场景标签</text>
       </view>
       <view class="tags-container">
         <block wx:for="{{tags}}" wx:key="*this">
-          <view class="tag {{selectedTags[item] ? 'selected' : ''}}" bindtap="toggleTag" data-tag="{{item}}">
-            {{item}}
-          </view>
+          <view class="tag {{selectedTags[item] ? 'selected' : ''}}" bindtap="toggleTag" data-tag="{{item}}">{{item}}</view>
         </block>
-        <view class="tag add-tag" bindtap="addCustomTag">
-          + 自定义
-        </view>
+        <view class="tag add-tag" bindtap="addCustomTag">+ 自定义</view>
       </view>
     </view>
 
-    <!-- Notes -->
     <view class="form-group">
       <view class="section-header">
         <text class="section-title">备注</text>
       </view>
-      <textarea class="textarea" name="note" placeholder="如有不适请备注（最多50字）" maxlength="50" bindinput="onNoteInput" auto-height="{{false}}"></textarea>
+      <textarea class="textarea" name="note" value="{{note}}" placeholder="如有不适、服药情况或其他说明可记录在这里" maxlength="80" bindinput="onNoteInput" auto-height="{{false}}"></textarea>
     </view>
 
-    <!-- Submit Button -->
     <view class="btn-area">
       <button class="save-btn" formType="submit">保存记录</button>
     </view>

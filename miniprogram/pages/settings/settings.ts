@@ -19,6 +19,23 @@ interface ActivationLink {
   created_at: string;
 }
 
+interface AdminAnalytics {
+  total_users: number;
+  paid_users: number;
+  total_records: number;
+  total_ocr: number;
+  recent_signups: number;
+  active_users: number;
+}
+
+interface AdminUserResult {
+  openid: string;
+  nickname?: string | null;
+  is_admin: boolean;
+  paid_until?: string | null;
+  created_at: string;
+}
+
 Component({
   data: {
     openid: '',
@@ -35,6 +52,8 @@ Component({
     defaults: DEFAULT_LIMITS,
     paidDefaults: PAID_DAILY_LIMITS,
     adminDefaults: ADMIN_DAILY_LIMITS,
+    membershipOrderCount: 0,
+    subscriptionHistoryCount: 0,
 
     // Invite links
     inviteLinks: [] as InviteLink[],
@@ -54,6 +73,9 @@ Component({
     adminCount: 1,
     generatedCodes: [] as string[],
     allActivationLinks: [] as ActivationLink[],
+    adminAnalytics: null as AdminAnalytics | null,
+    adminSearchQuery: '',
+    adminSearchResults: [] as AdminUserResult[],
 
     // Activation code input (for manual entry / fallback)
     activationCode: '',
@@ -83,6 +105,7 @@ Component({
           dataQuotaPeriod: res.data_quota_period || 'daily',
           ocrQuotaPeriod: res.ocr_quota_period || 'monthly',
         })
+        this.loadMembershipSummary()
         // Load invite links if paid user
         if (isPaid) {
           this.loadInviteLinks()
@@ -90,9 +113,25 @@ Component({
         // Load all activation links if admin
         if (res.is_admin) {
           this.loadActivationLinks()
+          this.loadAdminAnalytics()
         }
       } catch (err) {
         console.error('Failed to load user info:', err)
+      }
+    },
+
+    async loadMembershipSummary() {
+      try {
+        const [subscriptionRes, ordersRes]: any = await Promise.all([
+          request({ url: API_ENDPOINTS.PAYMENT_SUBSCRIPTION, method: 'GET', showError: false }),
+          request({ url: API_ENDPOINTS.PAYMENT_ORDERS, method: 'GET', showError: false }),
+        ])
+        this.setData({
+          membershipOrderCount: (ordersRes.orders || []).length,
+          subscriptionHistoryCount: (subscriptionRes.history || []).length,
+        })
+      } catch (err) {
+        console.error('Failed to load membership summary:', err)
       }
     },
 
@@ -174,6 +213,26 @@ Component({
       }
     },
 
+    goToSubscription() {
+      wx.navigateTo({ url: '/pages/subscription/index' })
+    },
+
+    goToTickets() {
+      wx.navigateTo({ url: '/pages/tickets/index' })
+    },
+
+    goToMedications() {
+      wx.navigateTo({ url: '/pages/medications/index' })
+    },
+
+    goToShareManage() {
+      wx.navigateTo({ url: '/pages/share-manage/index' })
+    },
+
+    goToExportCenter() {
+      wx.navigateTo({ url: '/pages/export-center/index' })
+    },
+
     // Activation code manual entry
     onActivationCodeInput(e: any) {
       this.setData({ activationCode: e.detail.value })
@@ -246,6 +305,37 @@ Component({
         this.setData({ allActivationLinks: links })
       } catch (err) {
         console.error('Failed to load activation links:', err)
+      }
+    },
+
+    async loadAdminAnalytics() {
+      try {
+        const res: any = await request({ url: API_ENDPOINTS.ADMIN_ANALYTICS, method: 'GET', showError: false })
+        this.setData({ adminAnalytics: res })
+      } catch (err) {
+        console.error('Failed to load admin analytics:', err)
+      }
+    },
+
+    onAdminSearchInput(e: any) {
+      this.setData({ adminSearchQuery: e.detail.value })
+    },
+
+    async onSearchUsers() {
+      const keyword = this.data.adminSearchQuery.trim()
+      if (!keyword) {
+        wx.showToast({ title: '请输入 openid 或昵称', icon: 'none' })
+        return
+      }
+      try {
+        const res: any = await request({
+          url: `${API_ENDPOINTS.ADMIN_USER_SEARCH}?q=${encodeURIComponent(keyword)}`,
+          method: 'GET',
+          showError: false,
+        })
+        this.setData({ adminSearchResults: res.data || [] })
+      } catch (err) {
+        console.error('Failed to search users:', err)
       }
     },
 

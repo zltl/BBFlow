@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-title">数据导出与治理</view>
+    <view class="hero-subtitle">导出您的血压记录、用药信息和账号数据；如有需要，也可在这里发起账号删除。</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">导出数据</view>
+    <view class="section-desc">JSON 适合备份原始数据；CSV 适合发给医生或在 Excel 中进一步整理。</view>
+    <button class="primary-btn" bindtap="exportJson" loading="{{exportingJson}}" disabled="{{exportingJson}}">导出 JSON 备份</button>
+    <button class="ghost-btn" bindtap="exportCsv" loading="{{exportingCsv}}" disabled="{{exportingCsv}}">导出 CSV 表格</button>
+  </view>
+
+  <view class="card warning-card">
+    <view class="section-title danger-text">危险操作</view>
+    <view class="section-desc">删除账号后，当前用户的全部数据将被永久清空，无法恢复。</view>
+    <button class="danger-btn" bindtap="deleteAccount" loading="{{deletingAccount}}" disabled="{{deletingAccount}}">删除我的账号与全部数据</button>
+  </view>
+</view>

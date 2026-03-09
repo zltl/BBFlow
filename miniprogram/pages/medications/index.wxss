@@ -1,0 +1,178 @@
+page {
+  background: #f6f8fb;
+}
+
+.page {
+  padding: 24rpx;
+}
+
+.hero-card,
+.stat-card,
+.form-card,
+.empty-card,
+.med-card {
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.06);
+}
+
+.hero-card {
+  padding: 32rpx;
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+  align-items: center;
+}
+
+.hero-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hero-subtitle,
+.empty-desc,
+.med-meta,
+.reminder-row,
+.adherence-meta {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.primary-btn,
+.ghost-btn,
+.success-btn,
+.danger-btn {
+  border-radius: 999rpx;
+}
+
+.primary-btn {
+  background: #1677ff;
+  color: #fff;
+}
+
+.success-btn {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.ghost-btn {
+  background: #eef4ff;
+  color: #1668dc;
+}
+
+.danger-btn {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+.stats-grid {
+  margin-top: 24rpx;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
+}
+
+.stat-card {
+  padding: 28rpx;
+}
+
+.stat-value {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #64748b;
+}
+
+.form-card,
+.empty-card {
+  margin-top: 24rpx;
+  padding: 32rpx;
+}
+
+.section-title,
+.med-name,
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.input,
+.picker {
+  margin-top: 20rpx;
+  background: #f8fafc;
+  border-radius: 18rpx;
+  padding: 22rpx 24rpx;
+  font-size: 28rpx;
+  color: #0f172a;
+}
+
+.form-actions,
+.actions {
+  margin-top: 24rpx;
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.form-actions button,
+.actions button {
+  margin: 0;
+}
+
+.med-list {
+  margin-top: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.med-card {
+  padding: 28rpx;
+}
+
+.med-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.status {
+  align-self: flex-start;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+
+.status.active {
+  background: rgba(82, 196, 26, 0.12);
+  color: #389e0d;
+}
+
+.status.muted {
+  background: rgba(148, 163, 184, 0.14);
+  color: #64748b;
+}
+
+.adherence-card {
+  margin-top: 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 18rpx;
+  background: #f8fafc;
+}
+
+.adherence-value {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #111827;
+}

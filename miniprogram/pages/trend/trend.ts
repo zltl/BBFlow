@@ -1,3 +1,4 @@
+import { API_ENDPOINTS } from '../../config';
 import { request } from '../../utils/request';
 
 Page({
@@ -25,7 +26,18 @@ Page({
     viewMode: 'list' as 'list' | 'table',  // 'list' or 'table'
     currentDate: '',
     totalRecordCount: 0,
-    tableData: [] as any[]  // Daily grouped table data
+    tableData: [] as any[],  // Daily grouped table data
+    insightsLoading: false,
+    insightsDays: 30,
+    insights: [] as Array<{ title: string; message: string; level: string; tone?: string }>,
+    insightSummary: {
+      recordCount: 0,
+      avgSystolic: 0,
+      avgDiastolic: 0,
+      avgHeartRate: 0,
+      morningAvgSys: 0,
+      eveningAvgSys: 0,
+    }
   },
 
   isSyncingScroll: false,
@@ -46,6 +58,7 @@ Page({
     const storageValue = wx.getStorageSync('autoAverage');
     const autoAverage = storageValue === '' ? true : storageValue;
     this.setData({ autoAverage });
+    this.loadInsights();
     this.loadDataAndDraw();
     this.loadHistoryRecords();
   },
@@ -152,6 +165,52 @@ Page({
     } catch (err) {
       console.error('Failed to load trend data', err);
     }
+  },
+
+  async loadInsights() {
+    this.setData({ insightsLoading: true });
+    try {
+      const res = await request<any>({
+        url: `${API_ENDPOINTS.INSIGHTS}?days=${this.data.insightsDays}`,
+        method: 'GET',
+        showError: false,
+      });
+
+      this.setData({
+        insights: (res.insights || []).map((item: any) => ({
+          ...item,
+          tone: item.level === 'critical'
+            ? 'critical'
+            : item.level === 'warning'
+              ? 'warning'
+              : item.level === 'good'
+                ? 'positive'
+                : 'info',
+        })),
+        insightSummary: {
+          recordCount: res.record_count || 0,
+          avgSystolic: Math.round(res.avg_systolic || 0),
+          avgDiastolic: Math.round(res.avg_diastolic || 0),
+          avgHeartRate: Math.round(res.avg_heart_rate || 0),
+          morningAvgSys: Math.round(res.morning_avg_sys || 0),
+          eveningAvgSys: Math.round(res.evening_avg_sys || 0),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to load insights', error);
+    } finally {
+      this.setData({ insightsLoading: false });
+    }
+  },
+
+  onInsightsRangeChange(e: WechatMiniprogram.TouchEvent) {
+    const days = Number(e.currentTarget.dataset.days);
+    if (!days || days === this.data.insightsDays) return;
+    this.setData({ insightsDays: days }, () => this.loadInsights());
+  },
+
+  goToMedications() {
+    wx.navigateTo({ url: '/pages/medications/index' });
   },
 
   onScrollToLeft() {

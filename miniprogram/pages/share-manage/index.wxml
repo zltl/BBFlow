@@ -1,0 +1,69 @@
+<view class="page">
+  <view class="hero-card">
+    <view>
+      <view class="hero-title">分享管理</view>
+      <view class="hero-subtitle">查看已创建的链接、访问次数和最后访问时间，支持随时撤销。</view>
+    </view>
+    <button class="primary-btn" size="mini" bindtap="goCreateLink">新建分享链接</button>
+  </view>
+
+  <view class="stats-grid">
+    <view class="stat-card">
+      <text class="stat-value">{{tokens.length}}</text>
+      <text class="stat-label">全部链接</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{activeCount}}</text>
+      <text class="stat-label">生效中</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{revokedCount}}</text>
+      <text class="stat-label">已撤销</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{totalAccessCount}}</text>
+      <text class="stat-label">累计访问</text>
+    </view>
+  </view>
+
+  <view class="empty-card" wx:if="{{!isLoading && tokens.length === 0}}">
+    <text class="empty-title">还没有分享链接</text>
+    <text class="empty-desc">先创建一个链接，再回来查看访问统计和撤销状态。</text>
+  </view>
+
+  <view class="token-list" wx:if="{{tokens.length > 0}}">
+    <view class="token-card" wx:for="{{tokens}}" wx:key="token">
+      <view class="token-head">
+        <view>
+          <view class="token-code">{{item.token}}</view>
+          <view class="token-meta">{{item.time_range === 'all' ? '全部历史' : ('最近' + item.time_range + '天')}} · {{item.share_future_data ? '包含后续新数据' : '仅当前快照'}}</view>
+        </view>
+        <view class="status {{item.statusTone}}">{{item.statusLabel}}</view>
+      </view>
+
+      <view class="detail-grid">
+        <view class="detail-item">
+          <text class="detail-label">创建时间</text>
+          <text class="detail-value">{{item.createdAtText}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-label">过期时间</text>
+          <text class="detail-value">{{item.expiresAtText}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-label">访问次数</text>
+          <text class="detail-value">{{item.access_count}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-label">最后访问</text>
+          <text class="detail-value">{{item.lastAccessedText}}</text>
+        </view>
+      </view>
+
+      <view class="actions">
+        <button size="mini" class="ghost-btn" bindtap="copyLink" data-token="{{item.token}}">复制 H5 链接</button>
+        <button size="mini" class="danger-btn" bindtap="revokeToken" data-token="{{item.token}}" disabled="{{item.is_revoked}}">{{item.is_revoked ? '已撤销' : '撤销链接'}}</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -5,8 +5,14 @@
     "pages/history/history",
     "pages/share/share",
     "pages/share-link/share-link",
+    "pages/share-manage/index",
     "pages/share-table/share-table",
+    "pages/export-center/index",
     "pages/viewer/viewer",
+    "pages/medications/index",
+    "pages/subscription/index",
+    "pages/tickets/index",
+    "pages/tickets/detail",
     "pages/guide/guide",
     "pages/settings/settings",
     "pages/logs/logs"
@@ -31,7 +37,7 @@
       },
       {
         "pagePath": "pages/share/share",
-        "text": "分享"
+        "text": "数据"
       },
       {
         "pagePath": "pages/settings/settings",

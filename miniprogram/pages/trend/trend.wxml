@@ -1,5 +1,45 @@
 <view class="page-scroll">
   <view class="container">
+    <view class="insights-section">
+      <view class="insights-header">
+        <view>
+          <text class="insights-title">健康洞察</text>
+          <text class="insights-subtitle">基于近阶段记录自动生成，仅供健康管理参考，不构成医疗诊断。</text>
+        </view>
+        <button class="insights-link-btn" size="mini" bindtap="goToMedications">查看用药</button>
+      </view>
+
+      <view class="insights-range">
+        <view class="range-chip {{insightsDays === 7 ? 'active' : ''}}" bindtap="onInsightsRangeChange" data-days="7">7 天</view>
+        <view class="range-chip {{insightsDays === 30 ? 'active' : ''}}" bindtap="onInsightsRangeChange" data-days="30">30 天</view>
+        <view class="range-chip {{insightsDays === 90 ? 'active' : ''}}" bindtap="onInsightsRangeChange" data-days="90">90 天</view>
+      </view>
+
+      <view class="insight-summary-grid">
+        <view class="insight-summary-card">
+          <text class="insight-summary-value">{{insightSummary.recordCount}}</text>
+          <text class="insight-summary-label">记录数</text>
+        </view>
+        <view class="insight-summary-card">
+          <text class="insight-summary-value">{{insightSummary.avgSystolic}}/{{insightSummary.avgDiastolic}}</text>
+          <text class="insight-summary-label">平均血压</text>
+        </view>
+        <view class="insight-summary-card">
+          <text class="insight-summary-value">{{insightSummary.avgHeartRate}}</text>
+          <text class="insight-summary-label">平均心率</text>
+        </view>
+        <view class="insight-summary-card">
+          <text class="insight-summary-value">{{insightSummary.morningAvgSys}}/{{insightSummary.eveningAvgSys}}</text>
+          <text class="insight-summary-label">晨/晚平均收缩压</text>
+        </view>
+      </view>
+
+      <view class="insight-card {{item.tone}}" wx:for="{{insights}}" wx:key="title">
+        <view class="insight-card-title">{{item.title}}</view>
+        <view class="insight-card-message">{{item.message}}</view>
+      </view>
+    </view>
+
     <view class="chart-container">
       <view class="chart-header">
         <view class="header-left">

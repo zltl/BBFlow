@@ -1,76 +1,62 @@
-<view class="container">
-  <view class="header">
-    <text class="title">生成分享报告</text>
-    <text class="subtitle">选择时间范围，生成您的健康概览</text>
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-title">数据中心</view>
+    <view class="hero-subtitle">集中处理分享、导出和会员相关操作，不再分散在多个入口里。</view>
   </view>
 
-  <view class="range-selector">
-    <view class="range-item {{timeRange === '7' ? 'active' : ''}}" bindtap="onRangeChange" data-range="7">
-      最近7天
+  <view class="action-grid">
+    <view class="action-card" bindtap="goToShareReport">
+      <text class="action-icon">🖼️</text>
+      <text class="action-title">生成分享图片</text>
+      <text class="action-desc">适合发给家人或医生</text>
     </view>
-    <view class="range-item {{timeRange === '30' ? 'active' : ''}}" bindtap="onRangeChange" data-range="30">
-      最近30天
+    <view class="action-card" bindtap="goToCreateLink">
+      <text class="action-icon">🔗</text>
+      <text class="action-title">新建分享链接</text>
+      <text class="action-desc">生成可查看数据的链接</text>
     </view>
-  </view>
-
-  <view class="preview-area">
-    <view class="table-view-container">
-      <scroll-view scroll-x="true" class="table-scroll" enhanced="true" show-scrollbar="true">
-        <view class="bp-table-daily">
-          <!-- Header Row 1: Group titles -->
-          <view class="table-header-top">
-            <view class="header-cell cell-date">日期</view>
-            <view class="header-cell cell-item"></view>
-            <view class="header-cell cell-item">早上</view>
-            <view class="header-cell cell-item"></view>
-            <view class="header-cell cell-item"></view>
-            <view class="header-cell cell-item">中午</view>
-            <view class="header-cell cell-item"></view>
-            <view class="header-cell cell-item"></view>
-            <view class="header-cell cell-item">晚上</view>
-            <view class="header-cell cell-item"></view>
-          </view>
-          <!-- Header Row 2: Sub titles -->
-          <view class="table-header-sub">
-            <view class="header-cell cell-date"></view>
-            <view class="header-cell cell-item">收缩</view>
-            <view class="header-cell cell-item">舒张</view>
-            <view class="header-cell cell-item">心率</view>
-            <view class="header-cell cell-item">收缩</view>
-            <view class="header-cell cell-item">舒张</view>
-            <view class="header-cell cell-item">心率</view>
-            <view class="header-cell cell-item">收缩</view>
-            <view class="header-cell cell-item">舒张</view>
-            <view class="header-cell cell-item">心率</view>
-          </view>
-          <!-- Data Rows -->
-          <view class="table-data-row" wx:for="{{tableData}}" wx:key="date">
-            <view class="data-cell cell-date">{{item.dateLabel}}</view>
-            <!-- Morning -->
-            <view class="data-cell cell-item {{item.morning.sys >= 140 ? 'abnormal' : ''}}">{{item.morning.sys || '-'}}</view>
-            <view class="data-cell cell-item {{item.morning.dia >= 90 ? 'abnormal' : ''}}">{{item.morning.dia || '-'}}</view>
-            <view class="data-cell cell-item">{{item.morning.hr || '-'}}</view>
-            <!-- Noon -->
-            <view class="data-cell cell-item {{item.noon.sys >= 140 ? 'abnormal' : ''}}">{{item.noon.sys || '-'}}</view>
-            <view class="data-cell cell-item {{item.noon.dia >= 90 ? 'abnormal' : ''}}">{{item.noon.dia || '-'}}</view>
-            <view class="data-cell cell-item">{{item.noon.hr || '-'}}</view>
-            <!-- Evening -->
-            <view class="data-cell cell-item {{item.evening.sys >= 140 ? 'abnormal' : ''}}">{{item.evening.sys || '-'}}</view>
-            <view class="data-cell cell-item {{item.evening.dia >= 90 ? 'abnormal' : ''}}">{{item.evening.dia || '-'}}</view>
-            <view class="data-cell cell-item">{{item.evening.hr || '-'}}</view>
-          </view>
-        </view>
-      </scroll-view>
+    <view class="action-card" bindtap="goToManageLinks">
+      <text class="action-icon">🛡️</text>
+      <text class="action-title">管理分享链接</text>
+      <text class="action-desc">查看访问次数并撤销</text>
+    </view>
+    <view class="action-card" bindtap="goToExportCenter">
+      <text class="action-icon">📦</text>
+      <text class="action-title">导出数据</text>
+      <text class="action-desc">下载 JSON / CSV 备份</text>
     </view>
   </view>
 
-  <!-- Hidden Canvas for Image Generation -->
-  <canvas type="2d" id="shareCanvas" style="position: fixed; left: -9999px; top: 0; width: {{canvasWidth}}px; height: {{canvasHeight}}px;"></canvas>
-
-  <view class="action-area">
-    <view class="btn-group">
-      <button class="share-btn" bindtap="onShareImage">微信好友分享</button>
+  <view class="stats-grid">
+    <view class="stat-card">
+      <text class="stat-value">{{summary.total}}</text>
+      <text class="stat-label">全部链接</text>
     </view>
-    <view class="tips">将以图片形式直接发送给好友</view>
+    <view class="stat-card">
+      <text class="stat-value">{{summary.active}}</text>
+      <text class="stat-label">生效中</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{summary.revoked}}</text>
+      <text class="stat-label">已撤销</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{summary.access}}</text>
+      <text class="stat-label">累计访问</text>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{recentLinks.length > 0}}">
+    <view class="section-title">最近创建的分享链接</view>
+    <view class="link-item" wx:for="{{recentLinks}}" wx:key="token">
+      <view class="link-token">{{item.token}}</view>
+      <view class="link-meta">状态：{{item.statusLabel}} · 过期：{{item.expiresAtText}} · 访问 {{item.access_count}} 次</view>
+    </view>
+  </view>
+
+  <view class="card membership-card">
+    <view class="section-title">会员与权益</view>
+    <view class="section-desc">查看套餐、订阅状态和订单历史；支付签名参数准备好后，这里会继续承接微信支付。</view>
+    <button class="primary-btn" bindtap="goToSubscription">打开会员中心</button>
   </view>
 </view>

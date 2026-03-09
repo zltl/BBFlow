@@ -266,3 +266,88 @@ page {
 .guide-icon {
   font-size: 28rpx;
 }
+
+.guide-link-container {
+  justify-content: space-between;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.ocr-review-card {
+  background: #fffdf0;
+  border: 2rpx solid rgba(250, 173, 20, 0.2);
+  border-radius: 24rpx;
+  padding: 28rpx 30rpx;
+  margin-bottom: 24rpx;
+}
+
+.ocr-review-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.ocr-review-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.ocr-review-subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #8c6d1f;
+  line-height: 1.6;
+}
+
+.ocr-review-meta {
+  margin-top: 18rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  font-size: 22rpx;
+  color: #8c6d1f;
+}
+
+.confidence-badge {
+  align-self: flex-start;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.confidence-badge.warning {
+  background: rgba(250, 173, 20, 0.18);
+  color: #ad6800;
+}
+
+.confidence-badge.safe {
+  background: rgba(82, 196, 26, 0.14);
+  color: #389e0d;
+}
+
+.ocr-review-actions {
+  margin-top: 22rpx;
+  display: flex;
+  gap: 16rpx;
+}
+
+.ocr-confirm-btn,
+.ocr-clear-btn {
+  flex: 1;
+  margin: 0;
+  border-radius: 999rpx;
+}
+
+.ocr-confirm-btn {
+  background: #1677ff;
+  color: #fff;
+}
+
+.ocr-clear-btn {
+  background: #f5f5f5;
+  color: #666;
+}

@@ -27,7 +27,7 @@ App<IAppOption>({
         if (res.code) {
           // 发起网络请求
           request<{ openid: string, token: string }>({
-            url: '/auth/login',
+            url: API_ENDPOINTS.AUTH_LOGIN,
             method: 'POST',
             data: {
               code: res.code

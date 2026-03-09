@@ -35,6 +35,9 @@
     <button class="generate-btn" bindtap="generateLink" loading="{{isLoading}}" disabled="{{isLoading}}">
       生成分享链接
     </button>
+    <button class="copy-btn" bindtap="goToManageLinks">
+      查看已生成的分享链接
+    </button>
     
     <view class="result-area" wx:if="{{shareLink}}">
       <view class="success-tips">

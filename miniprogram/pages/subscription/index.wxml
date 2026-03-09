@@ -1,0 +1,46 @@
+<view class="page">
+  <view class="notice-card">
+    <view class="notice-title">会员中心</view>
+    <view class="notice-desc">可查看套餐、订阅状态和订单历史。当前版本已支持创建订单与展示订阅结果，微信支付签名参数待后端联调后接入。</view>
+  </view>
+
+  <view class="status-card">
+    <view class="status-label">当前状态</view>
+    <view class="status-value {{subscription.is_active ? 'active' : 'inactive'}}">{{subscription.is_active ? '会员生效中' : '未开通 / 已过期'}}</view>
+    <view class="status-meta">到期时间：{{subscription.paid_until || '未开通'}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">可选套餐</view>
+    <view class="plan-list">
+      <view class="plan-card" wx:for="{{plans}}" wx:key="id">
+        <view class="plan-head">
+          <view>
+            <view class="plan-name">{{item.name}}</view>
+            <view class="plan-price">{{item.priceText}}</view>
+          </view>
+          <view class="plan-days">{{item.durationText}}</view>
+        </view>
+        <view class="plan-desc">{{item.description || '适合长期血压管理'}}。</view>
+        <button class="primary-btn" bindtap="createOrder" data-plan-id="{{item.id}}" loading="{{creatingPlanId === item.id}}" disabled="{{creatingPlanId === item.id}}">创建订单</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{subscription.history.length > 0}}">
+    <view class="section-title">订阅历史</view>
+    <view class="history-item" wx:for="{{subscription.history}}" wx:key="id">
+      <view class="history-plan">{{item.plan}}</view>
+      <view class="history-meta">{{item.startsAtText}} - {{item.expiresAtText}} · {{item.status}}</view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{orders.length > 0}}">
+    <view class="section-title">订单历史</view>
+    <view class="history-item" wx:for="{{orders}}" wx:key="id">
+      <view class="history-plan">{{item.plan}} · {{item.amountText}}</view>
+      <view class="history-meta">订单号：{{item.order_no}}</view>
+      <view class="history-meta">状态：{{item.status}} · 创建于 {{item.createdAtText}}</view>
+    </view>
+  </view>
+</view>

@@ -1,5 +1,5 @@
 import { request } from '../../utils/request';
-import { API_BASE_URL } from '../../config';
+import { API_BASE_ORIGIN, API_ENDPOINTS } from '../../config';
 
 Page({
   data: {
@@ -24,17 +24,13 @@ Page({
   },
 
   async generateLink() {
-    const openid = wx.getStorageSync('openid');
-    if (!openid) return;
-
     this.setData({ isLoading: true });
 
     try {
       const res = await request<{ token: string, expiration: string }>({
-        url: '/share/generate-token',
+        url: API_ENDPOINTS.SHARE_GENERATE_TOKEN,
         method: 'POST',
         data: {
-          openid,
           timeRange: this.data.timeRange,
           shareFutureData: this.data.shareFutureData
         }
@@ -52,8 +48,7 @@ Page({
       // path: /pages/viewer/viewer?token=...
       
       // Remove /api from base url for the HTML view link
-      const baseUrl = API_BASE_URL.replace(/\/api$/, '');
-      const httpLink = `${baseUrl}/share/html/${res.token}`;
+      const httpLink = `${API_BASE_ORIGIN}/share/html/${res.token}`;
 
       this.setData({
         shareLink: res.token, // Store token to use in onShareAppMessage
@@ -90,12 +85,16 @@ Page({
     });
   },
 
+  goToManageLinks() {
+    wx.navigateTo({ url: '/pages/share-manage/index' });
+  },
+
   onShareAppMessage() {
     const token = this.data.shareLink;
     if (!token) {
       return {
         title: '安压宝 - 血压健康管理',
-        path: '/pages/index/index'
+        path: '/pages/share/share'
       };
     }
 

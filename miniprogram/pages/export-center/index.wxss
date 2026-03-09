@@ -1,0 +1,73 @@
+page {
+  background: #f6f8fb;
+}
+
+.page {
+  padding: 24rpx;
+}
+
+.hero-card,
+.card {
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.06);
+}
+
+.hero-card {
+  padding: 32rpx;
+}
+
+.hero-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.hero-subtitle,
+.section-desc {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.card {
+  margin-top: 24rpx;
+  padding: 32rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.primary-btn,
+.ghost-btn,
+.danger-btn {
+  margin-top: 24rpx;
+  border-radius: 999rpx;
+}
+
+.primary-btn {
+  background: #1677ff;
+  color: #fff;
+}
+
+.ghost-btn {
+  background: #eef4ff;
+  color: #1668dc;
+}
+
+.warning-card {
+  border: 2rpx solid rgba(255, 77, 79, 0.12);
+}
+
+.danger-text {
+  color: #cf1322;
+}
+
+.danger-btn {
+  background: #fff1f0;
+  color: #cf1322;
+}

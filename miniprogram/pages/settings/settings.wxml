@@ -21,7 +21,52 @@
       <text class="status-label">到期时间：</text>
       <text class="status-value">{{paidUntil}}</text>
     </view>
+    <view class="status-row">
+      <text class="status-label">数据配额：</text>
+      <text class="status-value">{{dataQuota}} / {{dataQuotaPeriod === 'daily' ? '日' : '月'}}</text>
+    </view>
+    <view class="status-row">
+      <text class="status-label">OCR 配额：</text>
+      <text class="status-value">{{ocrQuota}} / {{ocrQuotaPeriod === 'daily' ? '日' : '月'}}</text>
+    </view>
+    <view class="status-row">
+      <text class="status-label">订单数：</text>
+      <text class="status-value">{{membershipOrderCount}}</text>
+    </view>
+    <view class="status-row">
+      <text class="status-label">订阅记录：</text>
+      <text class="status-value">{{subscriptionHistoryCount}}</text>
+    </view>
+    <button class="section-btn primary" bindtap="goToSubscription">打开会员中心</button>
 
+  </view>
+
+  <view class="section quick-section">
+    <view class="title">🚀 常用入口</view>
+    <view class="quick-grid">
+      <view class="quick-item" bindtap="goToMedications">
+        <text class="quick-icon">💊</text>
+        <text class="quick-text">用药管理</text>
+      </view>
+      <view class="quick-item" bindtap="goToTickets">
+        <text class="quick-icon">🎫</text>
+        <text class="quick-text">工单中心</text>
+      </view>
+      <view class="quick-item" bindtap="goToShareManage">
+        <text class="quick-icon">🔗</text>
+        <text class="quick-text">分享管理</text>
+      </view>
+      <view class="quick-item" bindtap="goToExportCenter">
+        <text class="quick-icon">📦</text>
+        <text class="quick-text">数据导出</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section support-section">
+    <view class="title">🛟 支持与服务</view>
+    <view class="note">如需反馈 OCR 识别问题、支付/订阅问题、导出需求或其他建议，推荐直接使用工单中心持续跟进。</view>
+    <button class="section-btn" bindtap="goToTickets">前往工单中心</button>
   </view>
 
   <!-- 激活码输入（免费/受邀用户可见） -->
@@ -77,6 +122,35 @@
   <!-- 管理员区块 -->
   <view class="section admin-section" wx:if="{{isAdmin}}">
     <view class="title">🔐 管理员 - 生成激活链接</view>
+    <view class="analytics-grid" wx:if="{{adminAnalytics}}">
+      <view class="analytics-item">
+        <text class="analytics-value">{{adminAnalytics.total_users}}</text>
+        <text class="analytics-label">总用户</text>
+      </view>
+      <view class="analytics-item">
+        <text class="analytics-value">{{adminAnalytics.paid_users}}</text>
+        <text class="analytics-label">付费用户</text>
+      </view>
+      <view class="analytics-item">
+        <text class="analytics-value">{{adminAnalytics.active_users}}</text>
+        <text class="analytics-label">7天活跃</text>
+      </view>
+      <view class="analytics-item">
+        <text class="analytics-value">{{adminAnalytics.total_records}}</text>
+        <text class="analytics-label">血压记录</text>
+      </view>
+    </view>
+    <view class="admin-search">
+      <input placeholder="搜索 openid 或昵称" value="{{adminSearchQuery}}" bindinput="onAdminSearchInput" />
+      <button class="section-btn" bindtap="onSearchUsers">搜索用户</button>
+    </view>
+    <view class="search-result" wx:if="{{adminSearchResults.length > 0}}">
+      <view class="search-result-item" wx:for="{{adminSearchResults}}" wx:key="openid">
+        <text class="result-title">{{item.nickname || '未设置昵称'}} {{item.is_admin ? '· 管理员' : ''}}</text>
+        <text class="result-meta">{{item.openid}}</text>
+        <text class="result-meta">到期：{{item.paid_until || '未开通'}}</text>
+      </view>
+    </view>
     <view class="form-row">
       <text>有效天数</text>
       <input type="number" value="{{adminDays}}" bindinput="onAdminDaysInput" />

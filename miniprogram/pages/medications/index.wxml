@@ -1,0 +1,65 @@
+<view class="page">
+  <view class="hero-card">
+    <view>
+      <view class="hero-title">用药管理</view>
+      <view class="hero-subtitle">记录药物、设置提醒时间，并随时完成服药打卡。</view>
+    </view>
+    <button class="primary-btn" size="mini" bindtap="showCreateForm">添加药物</button>
+  </view>
+
+  <view class="stats-grid">
+    <view class="stat-card">
+      <text class="stat-value">{{medications.length}}</text>
+      <text class="stat-label">药物总数</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{averageAdherence}}%</text>
+      <text class="stat-label">近30天平均依从性</text>
+    </view>
+  </view>
+
+  <view class="form-card" wx:if="{{formVisible}}">
+    <view class="section-title">{{editingId ? '编辑药物' : '新增药物'}}</view>
+    <input class="input" placeholder="药物名称，例如：缬沙坦" value="{{name}}" bindinput="onNameInput" />
+    <input class="input" placeholder="剂量，例如：80mg" value="{{dosage}}" bindinput="onDosageInput" />
+    <input class="input" placeholder="频次，例如：每日 1 次" value="{{frequency}}" bindinput="onFrequencyInput" />
+    <picker mode="time" value="{{reminderTime}}" bindchange="onReminderTimeChange">
+      <view class="picker">提醒时间：{{reminderTime}}</view>
+    </picker>
+    <view class="form-actions">
+      <button class="ghost-btn" bindtap="hideForm">取消</button>
+      <button class="primary-btn" bindtap="saveMedication">保存</button>
+    </view>
+  </view>
+
+  <view class="empty-card" wx:if="{{!isLoading && medications.length === 0}}">
+    <text class="empty-title">还没有添加药物</text>
+    <text class="empty-desc">先把常用降压药加入清单，后续就可以直接打卡和查看依从性。</text>
+  </view>
+
+  <view class="med-list" wx:if="{{medications.length > 0}}">
+    <view class="med-card" wx:for="{{medications}}" wx:key="id">
+      <view class="med-head">
+        <view>
+          <view class="med-name">{{item.name}}</view>
+          <view class="med-meta">{{item.dosage || '未填写剂量'}} · {{item.frequency || '未填写频次'}}</view>
+        </view>
+        <view class="status {{item.is_active ? 'active' : 'muted'}}">{{item.is_active ? '启用中' : '已停用'}}</view>
+      </view>
+
+      <view class="reminder-row">提醒时间：{{item.reminder_time || '未设置'}}</view>
+
+      <view class="adherence-card">
+        <text class="adherence-value">依从性 {{item.adherenceRateText}}</text>
+        <text class="adherence-meta">已服用 {{item.takenCount}} 次 · 跳过 {{item.skippedCount}} 次</text>
+      </view>
+
+      <view class="actions" wx:if="{{item.is_active}}">
+        <button size="mini" class="success-btn" bindtap="logMedication" data-id="{{item.id}}">已服用</button>
+        <button size="mini" class="ghost-btn" bindtap="logMedication" data-id="{{item.id}}" data-skipped="true">跳过</button>
+        <button size="mini" class="ghost-btn" bindtap="editMedication" data-item="{{item}}">编辑</button>
+        <button size="mini" class="danger-btn" bindtap="stopMedication" data-id="{{item.id}}">停用</button>
+      </view>
+    </view>
+  </view>
+</view>

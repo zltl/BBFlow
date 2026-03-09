@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="header-card">
+    <view class="subject">{{subject || '工单详情'}}</view>
+    <view class="meta">当前状态：{{status === 'closed' ? '已关闭' : '处理中'}}</view>
+  </view>
+
+  <view class="message-list" wx:if="{{messages.length > 0}}">
+    <view class="message {{item.sender_type}}" wx:for="{{messages}}" wx:key="id">
+      <view class="message-sender">{{item.sender_type === 'admin' ? '客服 / 管理员' : '我'}}</view>
+      <view class="message-content">{{item.content}}</view>
+      <view class="message-time">{{item.createdAtText}}</view>
+    </view>
+  </view>
+
+  <view class="empty-card" wx:if="{{!isLoading && messages.length === 0}}">
+    <text>暂无消息</text>
+  </view>
+
+  <view class="reply-card">
+    <textarea class="textarea" placeholder="继续补充问题细节或反馈处理结果" value="{{replyContent}}" bindinput="onReplyInput"></textarea>
+    <button class="primary-btn" bindtap="sendReply">发送回复</button>
+  </view>
+</view>
