@@ -48,6 +48,7 @@ type Config struct {
 	OSS         OSSConfig
 	AdminSecret string
 	LLM         LLMConfig
+	LogLevel    string
 }
 
 var AppConfig Config
@@ -103,5 +104,6 @@ func Load() {
 			BaseURL: getEnv("LLM_BASE_URL", "https://api.openai.com/v1"),
 			Model:   getEnv("LLM_MODEL", "gpt-4o"),
 		},
+		LogLevel: getEnv("LOG_LEVEL", "info"),
 	}
 }

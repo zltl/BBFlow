@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"time"
+	"log/slog"
 
 	"bbflow-server/config"
 	"bbflow-server/db"
 	"bbflow-server/handlers"
+	"bbflow-server/logging"
 	"bbflow-server/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -17,21 +17,21 @@ func main() {
 	// Load configuration
 	config.Load()
 
+	// Initialize structured logging
+	logging.Init(config.AppConfig.LogLevel)
+
 	// Initialize database
 	if err := db.Init(); err != nil {
-		log.Fatal("Failed to initialize database:", err)
+		slog.Error("failed to initialize database", "error", err)
+		panic(err)
 	}
 	defer db.Close()
 
 	// Setup Gin
-	r := gin.Default()
-
-	// Request logging middleware
-	r.Use(func(c *gin.Context) {
-		timestamp := time.Now().Format(time.RFC3339)
-		log.Printf("[%s] %s %s", timestamp, c.Request.Method, c.Request.URL.Path)
-		c.Next()
-	})
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(middleware.RequestID())
+	r.Use(middleware.RequestLogging())
 
 	// Health check
 	r.GET("/", func(c *gin.Context) {
@@ -104,8 +104,9 @@ func main() {
 
 	// Start server
 	addr := fmt.Sprintf(":%d", config.AppConfig.Port)
-	log.Printf("Server is running on http://localhost%s", addr)
+	slog.Info("server starting", "addr", addr)
 	if err := r.Run(addr); err != nil {
-		log.Fatal("Failed to start server:", err)
+		slog.Error("failed to start server", "error", err)
+		panic(err)
 	}
 }

@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"bbflow-server/config"
 	"bbflow-server/db"
+	"bbflow-server/logging"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -33,14 +33,14 @@ type WxResponse struct {
 }
 
 func Login(c *gin.Context) {
+	log := logging.FromGin(c)
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	log.Println("----- Login Request Start -----")
-	log.Println("Received code:", req.Code)
+	log.Info("login request received")
 
 	if req.Code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing code"})
@@ -53,7 +53,7 @@ func Login(c *gin.Context) {
 
 	resp, err := http.Get(wxURL)
 	if err != nil {
-		log.Println("WeChat API Error:", err)
+		log.Error("wechat API call failed", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to call WeChat API"})
 		return
 	}
@@ -66,13 +66,13 @@ func Login(c *gin.Context) {
 	}
 
 	if wxResp.ErrCode != 0 {
-		log.Println("WeChat API Error:", wxResp)
+		log.Warn("wechat API error", "errcode", wxResp.ErrCode, "errmsg", wxResp.ErrMsg)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "WeChat API Error", "details": wxResp})
 		return
 	}
 
 	openid := wxResp.OpenID
-	log.Println("Login successful. OpenID:", openid)
+	log.Info("login successful", "openid", openid)
 
 	// Save/Update user
 	var nickname, avatarURL *string
@@ -88,7 +88,7 @@ func Login(c *gin.Context) {
 		SET nickname = EXCLUDED.nickname, avatar_url = EXCLUDED.avatar_url
 	`, openid, nickname, avatarURL)
 	if err != nil {
-		log.Println("Error saving user:", err)
+		log.Error("failed to save user", "error", err)
 	}
 
 	// Generate JWT

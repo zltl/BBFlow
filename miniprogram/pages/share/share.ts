@@ -232,7 +232,6 @@ Page({
         const marginX = 10;
         const marginY = 20;
         const contentWidth = width - marginX * 2;
-        const contentHeight = height - marginY * 2;
 
         // Title
         ctx.fillStyle = '#000000';

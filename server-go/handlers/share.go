@@ -5,12 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"bbflow-server/db"
+	"bbflow-server/logging"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +21,7 @@ type GenerateTokenRequest struct {
 }
 
 func GenerateShareToken(c *gin.Context) {
+	log := logging.FromGin(c)
 	openid := c.GetString("openid")
 	if openid == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -35,7 +36,11 @@ func GenerateShareToken(c *gin.Context) {
 
 	// Generate random token
 	tokenBytes := make([]byte, 16)
-	rand.Read(tokenBytes)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		log.Error("failed to generate random token", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
 	token := hex.EncodeToString(tokenBytes)
 
 	expiresAt := time.Now().AddDate(0, 0, 7)
@@ -45,7 +50,7 @@ func GenerateShareToken(c *gin.Context) {
 		 VALUES ($1, $2, $3, $4, $5)`,
 		token, openid, req.TimeRange, req.ShareFutureData, expiresAt)
 	if err != nil {
-		log.Println("Error generating share token:", err)
+		log.Error("failed to generate share token", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}

@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
 	"bbflow-server/db"
+	"bbflow-server/logging"
 	"bbflow-server/utils"
 
 	"github.com/gin-gonic/gin"
@@ -16,6 +16,7 @@ import (
 var ocrQueue = utils.NewRateLimitedQueue(10)
 
 func OCRRecognize(c *gin.Context) {
+	log := logging.FromGin(c)
 	openid := c.GetString("openid")
 	if openid == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Unauthorized"})
@@ -29,6 +30,7 @@ func OCRRecognize(c *gin.Context) {
 		return
 	}
 	if !allowed {
+		log.Warn("ocr quota exceeded", "openid", openid, "used", used, "limit", limit)
 		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "已达到OCR识别次数上限", "used": used, "limit": limit})
 		return
 	}
@@ -40,7 +42,7 @@ func OCRRecognize(c *gin.Context) {
 	}
 	defer file.Close()
 
-	log.Printf("[OCR] Starting OCR process for file: %s, size: %d bytes", header.Filename, header.Size)
+	log.Info("ocr process started", "filename", header.Filename, "size", header.Size)
 
 	imageData, err := io.ReadAll(file)
 	if err != nil {
@@ -49,29 +51,26 @@ func OCRRecognize(c *gin.Context) {
 	}
 
 	// Upload to OSS
-	log.Println("[OCR] Uploading image to OSS...")
 	ossPath, err := utils.UploadImageToOSS(imageData, header.Filename)
 	if err != nil {
-		log.Println("[OCR] OSS upload error:", err)
+		log.Error("oss upload failed", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Failed to upload image"})
 		return
 	}
-	log.Printf("[OCR] Image uploaded to OSS: %s", ossPath)
+	log.Info("image uploaded to oss", "path", ossPath)
 
 	// Call Baidu OCR
-	log.Println("[OCR] Calling Baidu OCR API...")
 	wordsResult, err := utils.RecognizeImage(imageData)
 	if err != nil {
-		log.Println("[OCR] Baidu OCR error:", err)
+		log.Error("baidu ocr failed", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "OCR recognition failed"})
 		return
 	}
-	log.Printf("[OCR] Baidu OCR Success. Found %d words.", len(wordsResult))
+	log.Info("ocr recognition complete", "words_count", len(wordsResult))
 
 	// Parse BP data
-	log.Println("[OCR] Parsing OCR data...")
 	bpData := utils.ParseBPData(wordsResult)
-	log.Printf("[OCR] Parsed BP Data: %+v", bpData)
+	log.Info("bp data parsed", "systolic", bpData.Systolic, "diastolic", bpData.Diastolic, "heartrate", bpData.HeartRate)
 
 	// Save log to DB
 	wordsResultJSON, _ := json.Marshal(wordsResult)
@@ -79,11 +78,11 @@ func OCRRecognize(c *gin.Context) {
 
 	var ocrLogID int
 	err = db.Pool.QueryRow(context.Background(),
-		`INSERT INTO ocr_logs (image_path, ocr_raw_json, parsed_result)
-		 VALUES ($1, $2, $3) RETURNING id`,
-		ossPath, string(wordsResultJSON), string(bpDataJSON)).Scan(&ocrLogID)
+		`INSERT INTO ocr_logs (user_id, image_path, raw_result, parsed_result, status)
+		 VALUES ($1, $2, $3, $4, 'completed') RETURNING id`,
+		openid, ossPath, string(wordsResultJSON), string(bpDataJSON)).Scan(&ocrLogID)
 	if err != nil {
-		log.Println("[OCR] DB error:", err)
+		log.Error("failed to save ocr log", "error", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

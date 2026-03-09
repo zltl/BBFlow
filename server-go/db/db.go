@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"bbflow-server/config"
 
@@ -27,7 +27,7 @@ func Init() error {
 		return fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	log.Println("Connected to PostgreSQL database")
+	slog.Info("connected to database")
 
 	if err := initTables(); err != nil {
 		return err
@@ -209,10 +209,10 @@ func initTables() error {
 	`)
 	if err != nil {
 		// Non-fatal migration error, log and continue
-		log.Printf("Warning: failed to migrate legacy users: %v", err)
+		slog.Warn("failed to migrate legacy users", "error", err)
 	}
 
-	log.Println("Database initialized successfully")
+	slog.Info("database initialized successfully")
 	return nil
 }
 
