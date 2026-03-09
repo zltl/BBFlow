@@ -117,6 +117,70 @@ page {
   color: #0f172a;
 }
 
+.field-block {
+  margin-top: 24rpx;
+}
+
+.field-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #334155;
+}
+
+.field-hint {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.group-list {
+  margin-top: 18rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.group-card {
+  padding: 20rpx;
+  border-radius: 18rpx;
+  background: #f8fafc;
+}
+
+.group-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #475569;
+}
+
+.option-list {
+  margin-top: 14rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+}
+
+.option-list.compact {
+  margin-top: 16rpx;
+}
+
+.option-chip {
+  padding: 12rpx 22rpx;
+  border-radius: 999rpx;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 24rpx;
+  line-height: 1.4;
+  border: 2rpx solid transparent;
+}
+
+.option-chip.selected {
+  background: #dbeafe;
+  color: #1e3a8a;
+  border-color: #93c5fd;
+  font-weight: 600;
+}
+
 .form-actions,
 .actions {
   margin-top: 24rpx;

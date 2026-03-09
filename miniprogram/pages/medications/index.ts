@@ -1,6 +1,46 @@
 import { API_ENDPOINTS } from '../../config';
 import { request } from '../../utils/request';
 
+interface MedicationGroup {
+  category: string;
+  items: string[];
+}
+
+const COMMON_HYPERTENSION_MEDICATION_GROUPS: MedicationGroup[] = [
+  {
+    category: 'ARB',
+    items: ['缬沙坦', '氯沙坦', '厄贝沙坦', '替米沙坦', '奥美沙坦', '坎地沙坦', '阿利沙坦酯'],
+  },
+  {
+    category: 'ACEI',
+    items: ['培哚普利', '依那普利', '贝那普利', '福辛普利', '雷米普利', '卡托普利', '赖诺普利'],
+  },
+  {
+    category: 'CCB',
+    items: ['氨氯地平', '左旋氨氯地平', '硝苯地平控释片', '非洛地平', '乐卡地平', '拉西地平', '地尔硫卓', '维拉帕米'],
+  },
+  {
+    category: '利尿剂',
+    items: ['吲达帕胺', '氢氯噻嗪', '氯噻酮', '螺内酯', '呋塞米', '托拉塞米'],
+  },
+  {
+    category: 'β 受体阻滞剂',
+    items: ['美托洛尔', '比索洛尔', '阿替洛尔', '普萘洛尔', '卡维地洛'],
+  },
+  {
+    category: '其他降压药',
+    items: ['特拉唑嗪', '多沙唑嗪', '可乐定', '莫索尼定', '利血平'],
+  },
+  {
+    category: '复方制剂',
+    items: ['沙库巴曲缬沙坦', '氨氯地平贝那普利', '缬沙坦氨氯地平', '厄贝沙坦氢氯噻嗪', '替米沙坦氨氯地平', '奥美沙坦酯氨氯地平', '培哚普利吲达帕胺', '缬沙坦氢氯噻嗪'],
+  },
+];
+
+const COMMON_DOSAGE_OPTIONS = ['2.5mg', '5mg', '10mg', '20mg', '25mg', '40mg', '50mg', '80mg', '100mg', '160mg', '半片', '1片'];
+
+const COMMON_FREQUENCY_OPTIONS = ['每日1次', '每日2次', '每日早晨1次', '每日晚上1次', '每日早晚各1次', '睡前1次', '遵医嘱'];
+
 interface MedicationItem {
   id: number;
   name: string;
@@ -29,6 +69,9 @@ Page({
     formVisible: false,
     editingId: 0,
     name: '',
+    medicationGroups: COMMON_HYPERTENSION_MEDICATION_GROUPS,
+    dosageOptions: COMMON_DOSAGE_OPTIONS,
+    frequencyOptions: COMMON_FREQUENCY_OPTIONS,
     dosage: '',
     frequency: '',
     reminderTime: '08:00',
@@ -104,6 +147,12 @@ Page({
     });
   },
 
+  selectMedication(e: WechatMiniprogram.TouchEvent) {
+    const name = e.currentTarget.dataset.name as string;
+    if (!name) return;
+    this.setData({ name });
+  },
+
   onNameInput(e: WechatMiniprogram.Input) {
     this.setData({ name: e.detail.value });
   },
@@ -112,8 +161,20 @@ Page({
     this.setData({ dosage: e.detail.value });
   },
 
+  selectDosageOption(e: WechatMiniprogram.TouchEvent) {
+    const dosage = e.currentTarget.dataset.value as string;
+    if (!dosage) return;
+    this.setData({ dosage });
+  },
+
   onFrequencyInput(e: WechatMiniprogram.Input) {
     this.setData({ frequency: e.detail.value });
+  },
+
+  selectFrequencyOption(e: WechatMiniprogram.TouchEvent) {
+    const frequency = e.currentTarget.dataset.value as string;
+    if (!frequency) return;
+    this.setData({ frequency });
   },
 
   onReminderTimeChange(e: WechatMiniprogram.PickerChange) {

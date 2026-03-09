@@ -20,8 +20,40 @@
 
   <view class="form-card" wx:if="{{formVisible}}">
     <view class="section-title">{{editingId ? '编辑药物' : '新增药物'}}</view>
+    <view class="field-block">
+      <view class="field-label">常见降压药</view>
+      <view class="field-hint">按类别快速选择，也可以直接在下方手动输入或修改药物名称。</view>
+      <view class="group-list">
+        <view class="group-card" wx:for="{{medicationGroups}}" wx:key="category" wx:for-item="group">
+          <view class="group-title">{{group.category}}</view>
+          <view class="option-list">
+            <view class="option-chip {{name === medication ? 'selected' : ''}}" wx:for="{{group.items}}" wx:key="*this" wx:for-item="medication" bindtap="selectMedication" data-name="{{medication}}">
+              {{medication}}
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
     <input class="input" placeholder="药物名称，例如：缬沙坦" value="{{name}}" bindinput="onNameInput" />
+
+    <view class="field-block">
+      <view class="field-label">常用剂量</view>
+      <view class="option-list compact">
+        <view class="option-chip {{dosage === item ? 'selected' : ''}}" wx:for="{{dosageOptions}}" wx:key="*this" bindtap="selectDosageOption" data-value="{{item}}">
+          {{item}}
+        </view>
+      </view>
+    </view>
     <input class="input" placeholder="剂量，例如：80mg" value="{{dosage}}" bindinput="onDosageInput" />
+
+    <view class="field-block">
+      <view class="field-label">常用频次</view>
+      <view class="option-list compact">
+        <view class="option-chip {{frequency === item ? 'selected' : ''}}" wx:for="{{frequencyOptions}}" wx:key="*this" bindtap="selectFrequencyOption" data-value="{{item}}">
+          {{item}}
+        </view>
+      </view>
+    </view>
     <input class="input" placeholder="频次，例如：每日 1 次" value="{{frequency}}" bindinput="onFrequencyInput" />
     <picker mode="time" value="{{reminderTime}}" bindchange="onReminderTimeChange">
       <view class="picker">提醒时间：{{reminderTime}}</view>
