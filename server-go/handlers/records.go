@@ -77,6 +77,24 @@ func CreateRecord(c *gin.Context) {
 		return
 	}
 
+	// Validate blood pressure ranges
+	if req.Systolic < 60 || req.Systolic > 300 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "收缩压范围应在 60-300 mmHg"})
+		return
+	}
+	if req.Diastolic < 30 || req.Diastolic > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "舒张压范围应在 30-200 mmHg"})
+		return
+	}
+	if req.Systolic <= req.Diastolic {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "收缩压应大于舒张压"})
+		return
+	}
+	if req.HeartRate != nil && (*req.HeartRate < 20 || *req.HeartRate > 300) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "心率范围应在 20-300 bpm"})
+		return
+	}
+
 	measuredAt := time.Now()
 	if req.MeasuredAt != nil {
 		if t, err := time.Parse(time.RFC3339, *req.MeasuredAt); err == nil {

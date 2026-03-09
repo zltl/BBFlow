@@ -36,12 +36,22 @@ func main() {
 	// Setup Gin
 	r := gin.New()
 	r.Use(gin.Recovery())
+	r.Use(middleware.CORS())
 	r.Use(middleware.RequestID())
 	r.Use(middleware.RequestLogging())
 
 	// Health check
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok", "message": "BBFlow Server is running"})
+	})
+	r.GET("/health", func(c *gin.Context) {
+		status := "ok"
+		dbOk := true
+		if err := db.Pool.Ping(context.Background()); err != nil {
+			status = "degraded"
+			dbOk = false
+		}
+		c.JSON(200, gin.H{"status": status, "database": dbOk})
 	})
 
 	// Serve static files (admin page)
