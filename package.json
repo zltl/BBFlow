@@ -13,7 +13,7 @@
     "health"
   ],
   "author": "zltl",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
