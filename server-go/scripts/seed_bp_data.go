@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"time"
+	"os"
 
 	"bbflow-server/config"
 	"bbflow-server/db"
@@ -18,7 +19,7 @@ func main() {
 	}
 	defer db.Close()
 
-	openid := "oQd5S10uxgeCw2FY_mVDZ6aHZfTM"
+	openid := os.Args[0]
 	
 	// Seed random
 	rand.Seed(time.Now().UnixNano())
