@@ -35,6 +35,12 @@ func TestParseBPData_KeywordAnchoring(t *testing.T) {
 	if result.HeartRate == nil || *result.HeartRate != 72 {
 		t.Errorf("expected heartrate=72, got %v", result.HeartRate)
 	}
+	if result.ExtractionStrategy != "keyword" {
+		t.Errorf("expected strategy=keyword, got %s", result.ExtractionStrategy)
+	}
+	if result.Confidence < 0.8 {
+		t.Errorf("expected high confidence for keyword match, got %f", result.Confidence)
+	}
 }
 
 func TestParseBPData_PositionalInference(t *testing.T) {
@@ -46,6 +52,12 @@ func TestParseBPData_PositionalInference(t *testing.T) {
 	result := ParseBPData(input)
 	if result.Systolic == nil || *result.Systolic != 135 {
 		t.Errorf("expected systolic=135, got %v", result.Systolic)
+	}
+	if result.ExtractionStrategy != "positional" {
+		t.Errorf("expected strategy=positional, got %s", result.ExtractionStrategy)
+	}
+	if result.Confidence > 0.7 {
+		t.Errorf("positional confidence should be lower, got %f", result.Confidence)
 	}
 	if result.Diastolic == nil || *result.Diastolic != 88 {
 		t.Errorf("expected diastolic=88, got %v", result.Diastolic)

@@ -87,18 +87,28 @@ func getShareData(token string, page, pageSize int) (Owner, []ShareRecord, map[s
 	ctx := context.Background()
 
 	var shareInfo ShareInfo
+	var isRevoked bool
 	err := db.Pool.QueryRow(ctx,
-		`SELECT user_id, time_range, share_future_data, expires_at, created_at 
+		`SELECT user_id, time_range, share_future_data, expires_at, created_at, COALESCE(is_revoked, false)
 		 FROM share_tokens WHERE token = $1`, token).Scan(
 		&shareInfo.UserID, &shareInfo.TimeRange, &shareInfo.ShareFutureData,
-		&shareInfo.ExpiresAt, &shareInfo.CreatedAt)
+		&shareInfo.ExpiresAt, &shareInfo.CreatedAt, &isRevoked)
 	if err != nil {
 		return Owner{}, nil, nil, fmt.Errorf("invalid token")
+	}
+
+	if isRevoked {
+		return Owner{}, nil, nil, fmt.Errorf("token revoked")
 	}
 
 	if time.Now().After(shareInfo.ExpiresAt) {
 		return Owner{}, nil, nil, fmt.Errorf("token expired")
 	}
+
+	// Update access stats
+	db.Pool.Exec(ctx,
+		`UPDATE share_tokens SET access_count = COALESCE(access_count, 0) + 1, last_accessed_at = $1 WHERE token = $2`,
+		time.Now(), token)
 
 	// Build query
 	query := `SELECT systolic, diastolic, heart_rate, measured_at, tags, note 
@@ -159,13 +169,21 @@ func ViewShareData(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
 
+	// Log access audit
+	db.Pool.Exec(context.Background(),
+		`INSERT INTO share_access_logs (token, accessor_ip, user_agent) VALUES ($1, $2, $3)`,
+		token, c.ClientIP(), c.Request.UserAgent())
+
 	owner, records, meta, err := getShareData(token, page, pageSize)
 	if err != nil {
-		if err.Error() == "invalid token" {
+		switch err.Error() {
+		case "invalid token":
 			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid token"})
-		} else if err.Error() == "token expired" {
+		case "token expired":
 			c.JSON(http.StatusGone, gin.H{"error": "Token expired"})
-		} else {
+		case "token revoked":
+			c.JSON(http.StatusGone, gin.H{"error": "Token has been revoked"})
+		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve data"})
 		}
 		return
@@ -181,13 +199,21 @@ func ViewShareData(c *gin.Context) {
 func ViewShareHTML(c *gin.Context) {
 	token := c.Param("token")
 
+	// Log access audit
+	db.Pool.Exec(context.Background(),
+		`INSERT INTO share_access_logs (token, accessor_ip, user_agent) VALUES ($1, $2, $3)`,
+		token, c.ClientIP(), c.Request.UserAgent())
+
 	owner, records, meta, err := getShareData(token, 1, 20)
 	if err != nil {
-		if err.Error() == "invalid token" {
+		switch err.Error() {
+		case "invalid token":
 			c.String(http.StatusNotFound, "<h1>无效的分享链接</h1>")
-		} else if err.Error() == "token expired" {
+		case "token expired":
 			c.String(http.StatusGone, "<h1>分享链接已过期</h1>")
-		} else {
+		case "token revoked":
+			c.String(http.StatusGone, "<h1>分享链接已被撤销</h1>")
+		default:
 			c.String(http.StatusInternalServerError, "<h1>无法加载分享数据</h1>")
 		}
 		return

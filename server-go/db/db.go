@@ -212,6 +212,163 @@ func initTables() error {
 		slog.Warn("failed to migrate legacy users", "error", err)
 	}
 
+	// --- OCR reliability columns ---
+	for _, col := range []struct{ name, def string }{
+		{"record_id", "INTEGER"},
+		{"final_result", "TEXT"},
+		{"confidence_score", "REAL"},
+		{"extraction_strategy", "TEXT"},
+		{"verification_status", "TEXT DEFAULT 'auto_accepted'"},
+		{"user_corrected_values", "JSONB"},
+	} {
+		_, err = Pool.Exec(ctx, fmt.Sprintf(
+			`ALTER TABLE ocr_logs ADD COLUMN IF NOT EXISTS %s %s`, col.name, col.def))
+		if err != nil {
+			slog.Warn("failed to add ocr_logs column", "column", col.name, "error", err)
+		}
+	}
+
+	// --- Share security columns ---
+	for _, col := range []struct{ name, def string }{
+		{"is_revoked", "BOOLEAN DEFAULT FALSE"},
+		{"revoked_at", "TIMESTAMP"},
+		{"access_count", "INTEGER DEFAULT 0"},
+		{"last_accessed_at", "TIMESTAMP"},
+	} {
+		_, err = Pool.Exec(ctx, fmt.Sprintf(
+			`ALTER TABLE share_tokens ADD COLUMN IF NOT EXISTS %s %s`, col.name, col.def))
+		if err != nil {
+			slog.Warn("failed to add share_tokens column", "column", col.name, "error", err)
+		}
+	}
+
+	// --- Share access audit log ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS share_access_logs (
+			id SERIAL PRIMARY KEY,
+			token TEXT NOT NULL,
+			accessor_ip TEXT,
+			user_agent TEXT,
+			accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create share_access_logs table: %w", err)
+	}
+
+	// --- Medications table ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS medications (
+			id SERIAL PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			name TEXT NOT NULL,
+			dosage TEXT,
+			frequency TEXT,
+			reminder_time TEXT,
+			is_active BOOLEAN DEFAULT TRUE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(openid)
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create medications table: %w", err)
+	}
+
+	// --- Medication logs table ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS medication_logs (
+			id SERIAL PRIMARY KEY,
+			medication_id INTEGER NOT NULL,
+			user_id TEXT NOT NULL,
+			taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			skipped BOOLEAN DEFAULT FALSE,
+			note TEXT,
+			FOREIGN KEY(medication_id) REFERENCES medications(id),
+			FOREIGN KEY(user_id) REFERENCES users(openid)
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create medication_logs table: %w", err)
+	}
+
+	// --- Support tickets table ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS support_tickets (
+			id SERIAL PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			subject TEXT NOT NULL,
+			status TEXT DEFAULT 'open',
+			priority TEXT DEFAULT 'normal',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(openid)
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create support_tickets table: %w", err)
+	}
+
+	// --- Support ticket messages ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS ticket_messages (
+			id SERIAL PRIMARY KEY,
+			ticket_id INTEGER NOT NULL,
+			sender_type TEXT NOT NULL,
+			content TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(ticket_id) REFERENCES support_tickets(id)
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create ticket_messages table: %w", err)
+	}
+
+	// --- Analytics events ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS analytics_events (
+			id SERIAL PRIMARY KEY,
+			user_id TEXT,
+			event_type TEXT NOT NULL,
+			event_data JSONB,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create analytics_events table: %w", err)
+	}
+
+	// --- Data export requests ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS data_exports (
+			id SERIAL PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			format TEXT NOT NULL DEFAULT 'json',
+			status TEXT DEFAULT 'pending',
+			file_path TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			completed_at TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(openid)
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create data_exports table: %w", err)
+	}
+
+	// --- Idempotency keys ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS idempotency_keys (
+			key TEXT PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			response_status INTEGER,
+			response_body TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create idempotency_keys table: %w", err)
+	}
+
 	slog.Info("database initialized successfully")
 	return nil
 }

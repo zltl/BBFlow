@@ -76,18 +76,27 @@ func OCRRecognize(c *gin.Context) {
 	wordsResultJSON, _ := json.Marshal(wordsResult)
 	bpDataJSON, _ := json.Marshal(bpData)
 
+	verificationStatus := "auto_accepted"
+	if bpData.Confidence < 0.7 {
+		verificationStatus = "needs_review"
+	}
+
 	var ocrLogID int
 	err = db.Pool.QueryRow(context.Background(),
-		`INSERT INTO ocr_logs (user_id, image_path, raw_result, parsed_result, status)
-		 VALUES ($1, $2, $3, $4, 'completed') RETURNING id`,
-		openid, ossPath, string(wordsResultJSON), string(bpDataJSON)).Scan(&ocrLogID)
+		`INSERT INTO ocr_logs (user_id, image_path, raw_result, parsed_result, status, confidence_score, extraction_strategy, verification_status)
+		 VALUES ($1, $2, $3, $4, 'completed', $5, $6, $7) RETURNING id`,
+		openid, ossPath, string(wordsResultJSON), string(bpDataJSON),
+		bpData.Confidence, bpData.ExtractionStrategy, verificationStatus).Scan(&ocrLogID)
 	if err != nil {
 		log.Error("failed to save ocr log", "error", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"data":     bpData,
-		"ocrLogId": ocrLogID,
+		"success":            true,
+		"data":               bpData,
+		"ocrLogId":           ocrLogID,
+		"confidence":         bpData.Confidence,
+		"needsReview":        bpData.Confidence < 0.7,
+		"extractionStrategy": bpData.ExtractionStrategy,
 	})
 }

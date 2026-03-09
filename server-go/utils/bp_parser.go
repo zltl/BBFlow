@@ -8,9 +8,11 @@ import (
 )
 
 type BPResult struct {
-	Systolic  *int `json:"systolic,omitempty"`
-	Diastolic *int `json:"diastolic,omitempty"`
-	HeartRate *int `json:"heartRate,omitempty"`
+	Systolic           *int    `json:"systolic,omitempty"`
+	Diastolic          *int    `json:"diastolic,omitempty"`
+	HeartRate          *int    `json:"heartRate,omitempty"`
+	Confidence         float64 `json:"confidence"`
+	ExtractionStrategy string  `json:"extractionStrategy"`
 }
 
 type parsedItem struct {
@@ -90,8 +92,12 @@ func ParseBPData(wordsResult []OCRResult) BPResult {
 	result.HeartRate = findNearestNumber(pulPattern)
 
 	if result.Systolic != nil && result.Diastolic != nil && result.HeartRate != nil {
+		result.ExtractionStrategy = "keyword"
+		result.Confidence = 0.9
 		return result
 	}
+
+	keywordPartial := result.Systolic != nil || result.Diastolic != nil || result.HeartRate != nil
 
 	// Strategy B: Positional inference
 	var unusedNumbers []parsedItem
@@ -141,6 +147,28 @@ func ParseBPData(wordsResult []OCRResult) BPResult {
 	// Sanity check: swap if systolic < diastolic
 	if result.Systolic != nil && result.Diastolic != nil && *result.Systolic < *result.Diastolic {
 		*result.Systolic, *result.Diastolic = *result.Diastolic, *result.Systolic
+	}
+
+	// Compute confidence score
+	if keywordPartial {
+		result.ExtractionStrategy = "keyword+positional"
+		result.Confidence = 0.7
+	} else {
+		result.ExtractionStrategy = "positional"
+		result.Confidence = 0.5
+	}
+	fields := 0
+	if result.Systolic != nil {
+		fields++
+	}
+	if result.Diastolic != nil {
+		fields++
+	}
+	if result.HeartRate != nil {
+		fields++
+	}
+	if fields < 2 {
+		result.Confidence *= 0.5
 	}
 
 	return result

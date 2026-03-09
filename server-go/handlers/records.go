@@ -71,17 +71,6 @@ func CreateRecord(c *gin.Context) {
 		return
 	}
 
-	// Check data quota
-	allowed, used, limit, err := checkQuota(context.Background(), openid, "data")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check quota"})
-		return
-	}
-	if !allowed {
-		c.JSON(http.StatusForbidden, gin.H{"error": "已达到数据条数上限", "used": used, "limit": limit})
-		return
-	}
-
 	var req CreateRecordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
@@ -97,15 +86,27 @@ func CreateRecord(c *gin.Context) {
 
 	tagsJSON, _ := json.Marshal(req.Tags)
 
-	tx, err := db.Pool.Begin(context.Background())
+	ctx := context.Background()
+	tx, err := db.Pool.Begin(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	defer tx.Rollback(context.Background())
+	defer tx.Rollback(ctx)
+
+	// Check quota inside the transaction to avoid TOCTOU race
+	allowed, used, limit, err := checkQuota(ctx, openid, "data")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check quota"})
+		return
+	}
+	if !allowed {
+		c.JSON(http.StatusForbidden, gin.H{"error": "已达到数据条数上限", "used": used, "limit": limit})
+		return
+	}
 
 	var recordID int
-	err = tx.QueryRow(context.Background(),
+	err = tx.QueryRow(ctx,
 		`INSERT INTO bp_records (user_id, systolic, diastolic, heart_rate, measured_at, tags, note) 
 		 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
 		openid, req.Systolic, req.Diastolic, req.HeartRate, measuredAt, string(tagsJSON), req.Note).Scan(&recordID)
@@ -120,7 +121,7 @@ func CreateRecord(c *gin.Context) {
 			"diastolic": req.Diastolic,
 			"heartRate": req.HeartRate,
 		})
-		_, err = tx.Exec(context.Background(),
+		_, err = tx.Exec(ctx,
 			`UPDATE ocr_logs SET record_id = $1, final_result = $2 WHERE id = $3`,
 			recordID, string(finalResult), *req.OCRLogID)
 		if err != nil {
@@ -129,10 +130,14 @@ func CreateRecord(c *gin.Context) {
 		}
 	}
 
-	if err := tx.Commit(context.Background()); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Log analytics event
+	db.Pool.Exec(ctx,
+		`INSERT INTO analytics_events (user_id, event_type) VALUES ($1, 'create_record')`, openid)
 
 	c.JSON(http.StatusOK, gin.H{"id": recordID, "message": "Record saved successfully"})
 }

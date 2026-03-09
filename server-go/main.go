@@ -56,7 +56,7 @@ func main() {
 		records.Use(middleware.AuthMiddleware())
 		{
 			records.GET("/", middleware.HistoryLimiter(), handlers.GetRecords)
-			records.POST("/", middleware.RecordLimiter(), handlers.CreateRecord)
+			records.POST("/", middleware.RecordLimiter(), middleware.Idempotency(), handlers.CreateRecord)
 			records.DELETE("/:id", middleware.RecordLimiter(), handlers.DeleteRecord)
 		}
 
@@ -65,14 +65,47 @@ func main() {
 		ocr.Use(middleware.AuthMiddleware())
 		{
 			ocr.POST("/recognize", middleware.RecordLimiter(), handlers.OCRRecognize)
+			ocr.POST("/verify", handlers.OCRVerify)
 		}
 
-		// Share routes (data sharing, untouched)
+		// Share routes
 		share := api.Group("/share")
 		{
 			share.POST("/generate-token", middleware.AuthMiddleware(), middleware.ShareGenLimiter(), handlers.GenerateShareToken)
+			share.GET("/list", middleware.AuthMiddleware(), handlers.ListShareTokens)
+			share.POST("/revoke/:token", middleware.AuthMiddleware(), handlers.RevokeShareToken)
 			share.GET("/view/:token", middleware.ShareViewLimiter(), handlers.ViewShareData)
 			share.GET("/html/:token", middleware.ShareViewLimiter(), handlers.ViewShareHTML)
+		}
+
+		// Health insights
+		api.GET("/insights", middleware.AuthMiddleware(), handlers.GetHealthInsights)
+
+		// Medication management
+		meds := api.Group("/medications")
+		meds.Use(middleware.AuthMiddleware())
+		{
+			meds.GET("/", handlers.ListMedications)
+			meds.POST("/", handlers.CreateMedication)
+			meds.PUT("/:id", handlers.UpdateMedication)
+			meds.DELETE("/:id", handlers.DeleteMedication)
+			meds.POST("/log", handlers.LogMedication)
+			meds.GET("/adherence", handlers.GetMedicationAdherence)
+		}
+
+		// Data export & account management
+		api.GET("/export/json", middleware.AuthMiddleware(), handlers.ExportUserData)
+		api.GET("/export/csv", middleware.AuthMiddleware(), handlers.ExportUserDataCSV)
+		api.DELETE("/account", middleware.AuthMiddleware(), handlers.DeleteAccount)
+
+		// Support tickets
+		tickets := api.Group("/tickets")
+		tickets.Use(middleware.AuthMiddleware())
+		{
+			tickets.POST("/", handlers.CreateTicket)
+			tickets.GET("/", handlers.ListTickets)
+			tickets.GET("/:id/messages", handlers.GetTicketMessages)
+			tickets.POST("/:id/reply", handlers.ReplyToTicket)
 		}
 
 		// Invite routes (distribution system)
@@ -95,6 +128,11 @@ func main() {
 			admin.POST("/activation-links", handlers.GenerateActivationLinks)
 			admin.GET("/activation-links", handlers.ListActivationLinks)
 			admin.DELETE("/activation-links/:code", handlers.DeleteActivationLink)
+			admin.GET("/tickets", handlers.AdminListTickets)
+			admin.POST("/tickets/:id/reply", handlers.AdminReplyTicket)
+			admin.POST("/tickets/:id/close", handlers.AdminCloseTicket)
+			admin.GET("/users/search", handlers.AdminSearchUsers)
+			admin.GET("/analytics", handlers.AdminGetAnalytics)
 		}
 	}
 
