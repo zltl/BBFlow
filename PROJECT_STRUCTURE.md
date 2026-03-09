@@ -102,3 +102,6 @@ go build -o bbflow-server  # 构建
 | `analytics_events` | 分析事件 |
 | `data_exports` | 数据导出请求 |
 | `idempotency_keys` | 幂等键缓存 |
+| `plans` | 订阅套餐 |
+| `payment_orders` | 支付订单 |
+| `subscriptions` | 用户订阅记录 |

@@ -88,6 +88,13 @@ LLM_MODEL=gpt-4o
 - `GET /api/export/csv` - 导出血压记录 (CSV) 🔒
 - `DELETE /api/account` - 删除账号 🔒
 
+### 支付与订阅
+- `GET /api/plans` - 获取套餐列表
+- `POST /api/payment/order` - 创建支付订单（支持 Idempotency-Key）🔒
+- `GET /api/payment/subscription` - 查询订阅状态 🔒
+- `GET /api/payment/orders` - 订单历史 🔒
+- `POST /api/payment/callback` - 支付回调（WeChat Pay webhook）
+
 ### 支持工单
 - `POST /api/tickets` - 创建工单 🔒
 - `GET /api/tickets` - 我的工单列表 🔒

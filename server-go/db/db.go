@@ -370,6 +370,73 @@ func initTables() error {
 	}
 
 	slog.Info("database initialized successfully")
+
+	// --- Payment & subscription tables ---
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS plans (
+			id SERIAL PRIMARY KEY,
+			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
+			price_cents INTEGER NOT NULL,
+			duration_days INTEGER NOT NULL DEFAULT 365,
+			max_records INTEGER NOT NULL DEFAULT -1,
+			features TEXT DEFAULT '{}',
+			is_active BOOLEAN DEFAULT true,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create plans table: %w", err)
+	}
+
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS payment_orders (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			plan_id INTEGER NOT NULL REFERENCES plans(id),
+			order_no TEXT UNIQUE NOT NULL,
+			amount_cents INTEGER NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			trade_no TEXT,
+			payment_method TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			paid_at TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create payment_orders table: %w", err)
+	}
+
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS subscriptions (
+			id SERIAL PRIMARY KEY,
+			user_id INTEGER NOT NULL,
+			plan_id INTEGER NOT NULL REFERENCES plans(id),
+			order_id INTEGER REFERENCES payment_orders(id),
+			starts_at TIMESTAMP NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			status TEXT NOT NULL DEFAULT 'active',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create subscriptions table: %w", err)
+	}
+
+	// Insert default plans if none exist
+	var planCount int
+	err = Pool.QueryRow(ctx, `SELECT COUNT(*) FROM plans`).Scan(&planCount)
+	if err == nil && planCount == 0 {
+		_, _ = Pool.Exec(ctx, `
+			INSERT INTO plans (name, description, price_cents, duration_days, max_records, features) VALUES
+			('月度会员', '按月订阅，无限血压记录', 990, 30, -1, '{"unlimited_records": true, "insights": true, "export": true}'),
+			('年度会员', '年度订阅，性价比最高', 6800, 365, -1, '{"unlimited_records": true, "insights": true, "export": true, "priority_support": true}'),
+			('终身会员', '一次购买，永久使用', 12800, 36500, -1, '{"unlimited_records": true, "insights": true, "export": true, "priority_support": true, "lifetime": true}')
+		`)
+		slog.Info("default plans seeded")
+	}
+
+	slog.Info("all tables initialized")
 	return nil
 }
 

@@ -1,8 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"bbflow-server/config"
 	"bbflow-server/db"
@@ -108,6 +114,17 @@ func main() {
 			tickets.POST("/:id/reply", handlers.ReplyToTicket)
 		}
 
+		// Payment & subscription
+		api.GET("/plans", handlers.ListPlans)
+		payment := api.Group("/payment")
+		payment.Use(middleware.AuthMiddleware())
+		{
+			payment.POST("/order", middleware.Idempotency(), handlers.CreateOrder)
+			payment.GET("/subscription", handlers.GetSubscription)
+			payment.GET("/orders", handlers.ListOrders)
+		}
+		api.POST("/payment/callback", handlers.PaymentCallback)
+
 		// Invite routes (distribution system)
 		invite := api.Group("/invite")
 		invite.Use(middleware.AuthMiddleware())
@@ -140,11 +157,27 @@ func main() {
 	r.GET("/share/html/:token", middleware.ShareViewLimiter(), handlers.ViewShareHTML)
 	r.GET("/share/view/:token", middleware.ShareViewLimiter(), handlers.ViewShareData)
 
-	// Start server
+	// Start server with graceful shutdown
 	addr := fmt.Sprintf(":%d", config.AppConfig.Port)
-	slog.Info("server starting", "addr", addr)
-	if err := r.Run(addr); err != nil {
-		slog.Error("failed to start server", "error", err)
-		panic(err)
+	srv := &http.Server{Addr: addr, Handler: r}
+
+	go func() {
+		slog.Info("server starting", "addr", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	slog.Info("shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("server forced to shutdown", "error", err)
 	}
+	slog.Info("server stopped")
 }
