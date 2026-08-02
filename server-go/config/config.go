@@ -39,16 +39,24 @@ type LLMConfig struct {
 	Model   string
 }
 
+type WxPayConfig struct {
+	MchID     string
+	APIKey    string
+	NotifyURL string
+}
+
 type Config struct {
-	Port        int
-	Wx          WxConfig
-	DB          DBConfig
-	JWTSecret   string
-	Baidu       BaiduConfig
-	OSS         OSSConfig
-	AdminSecret string
-	LLM         LLMConfig
-	LogLevel    string
+	Port                   int
+	Wx                     WxConfig
+	WxPay                  WxPayConfig
+	DB                     DBConfig
+	JWTSecret              string
+	Baidu                  BaiduConfig
+	OSS                    OSSConfig
+	AdminSecret            string
+	SubscribeMedTemplateID string
+	LLM                    LLMConfig
+	LogLevel               string
 }
 
 var AppConfig Config
@@ -80,6 +88,11 @@ func Load() {
 			AppID:  getEnv("WC_APP_ID", ""),
 			Secret: getEnv("WC_APP_SECRET", ""),
 		},
+		WxPay: WxPayConfig{
+			MchID:     getEnv("WX_MCH_ID", ""),
+			APIKey:    getEnv("WX_MCH_API_KEY", ""),
+			NotifyURL: getEnv("WX_NOTIFY_URL", ""),
+		},
 		DB: DBConfig{
 			Host:     getEnv("PG_HOST", "localhost"),
 			Port:     getEnvInt("PG_PORT", 5432),
@@ -87,8 +100,9 @@ func Load() {
 			User:     getEnv("PG_USER", "postgres"),
 			Password: getEnv("PG_PASSWORD", ""),
 		},
-		JWTSecret:   getEnv("JWT_SECRET", "default_secret_key_for_dev"),
-		AdminSecret: getEnv("ADMIN_SECRET", ""),
+		JWTSecret:              getEnv("JWT_SECRET", "default_secret_key_for_dev"),
+		AdminSecret:            getEnv("ADMIN_SECRET", ""),
+		SubscribeMedTemplateID: getEnv("WX_SUBSCRIBE_MED_TEMPLATE_ID", ""),
 		Baidu: BaiduConfig{
 			APIKey:    getEnv("BAIDU_OCR_API_KEY", ""),
 			SecretKey: getEnv("BAIDU_OCR_SECRET_KEY", ""),

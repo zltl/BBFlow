@@ -1,3 +1,4 @@
+import { API_ENDPOINTS } from '../../config';
 import { request } from '../../utils/request';
 
 Page({
@@ -300,10 +301,45 @@ Page({
 
   showDetail(e: WechatMiniprogram.TouchEvent) {
     const item = e.currentTarget.dataset.item;
-    wx.showModal({
-      title: '记录详情',
-      content: `时间: ${item.measuredAt}\n高压: ${item.systolic}\n低压: ${item.diastolic}\n心率: ${item.heartRate}\n标签: ${item.tags ? item.tags.join(', ') : '无'}\n备注: ${item.note || '无'}`,
-      showCancel: false
+    wx.showActionSheet({
+      itemList: ['查看详情', '编辑记录', '删除记录'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.showModal({
+            title: '记录详情',
+            content: `时间: ${item.measuredAt}\n高压: ${item.systolic}\n低压: ${item.diastolic}\n心率: ${item.heartRate}\n标签: ${item.tags ? item.tags.join(', ') : '无'}\n备注: ${item.note || '无'}`,
+            showCancel: false,
+          });
+        } else if (res.tapIndex === 1) {
+          wx.setStorageSync('pending_edit_record_id', item.id);
+          wx.switchTab({ url: '/pages/record/record' });
+        } else if (res.tapIndex === 2) {
+          this.deleteRecord(item.id);
+        }
+      },
     });
-  }
+  },
+
+  async deleteRecord(id: number) {
+    if (!id) return;
+    const confirm = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: '删除记录',
+        content: '确认删除这条血压记录吗？',
+        confirmColor: '#ff4d4f',
+        success: (res) => resolve(!!res.confirm),
+      });
+    });
+    if (!confirm) return;
+    try {
+      await request({
+        url: `${API_ENDPOINTS.RECORDS}/${id}`,
+        method: 'DELETE',
+      });
+      wx.showToast({ title: '已删除', icon: 'success' });
+      this.loadRecords();
+    } catch (error) {
+      console.error('Failed to delete record', error);
+    }
+  },
 });

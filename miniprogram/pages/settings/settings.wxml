@@ -11,24 +11,25 @@
   <!-- 账户状态 -->
   <view class="section status-section">
     <view class="title">📊 账户状态</view>
-    <!--view class="status-row">
+    <view class="status-row">
       <text class="status-label">用户类型：</text>
       <text class="status-value {{isPaid ? 'status-paid' : isSponsored ? 'status-sponsored' : 'status-free'}}">
         {{isPaid ? '付费用户' : isSponsored ? '受邀用户' : '免费用户'}}
       </text>
-    </view -->
-    <view class="status-row" wx:if="{{isPaid && paidUntil}}">
+    </view>
+    <view class="status-row" wx:if="{{(isPaid || isSponsored) && paidUntil}}">
       <text class="status-label">到期时间：</text>
       <text class="status-value">{{paidUntil}}</text>
     </view>
     <view class="status-row">
-      <text class="status-label">数据配额：</text>
-      <text class="status-value">{{dataQuota}} / {{dataQuotaPeriod === 'daily' ? '日' : '月'}}</text>
+      <text class="status-label">今日记录：</text>
+      <text class="status-value">{{dataUsed}} / {{dataQuota}}（{{dataQuotaPeriod === 'daily' ? '每日' : '周期'}}）</text>
     </view>
     <view class="status-row">
-      <text class="status-label">OCR 配额：</text>
-      <text class="status-value">{{ocrQuota}} / {{ocrQuotaPeriod === 'daily' ? '日' : '月'}}</text>
+      <text class="status-label">OCR 识别：</text>
+      <text class="status-value">{{ocrUsed}} / {{ocrQuota}}（{{ocrQuotaPeriod === 'daily' ? '每日' : '每月'}}）</text>
     </view>
+    <view class="quota-tip" wx:if="{{!isPaid && !isSponsored}}">免费用户每月 OCR {{ocrQuota}} 次。升级会员可提升至每日 60 次。</view>
     <view class="status-row">
       <text class="status-label">订单数：</text>
       <text class="status-value">{{membershipOrderCount}}</text>

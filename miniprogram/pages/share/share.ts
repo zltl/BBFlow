@@ -11,6 +11,8 @@ interface ShareTokenSummary {
 Page({
   data: {
     isLoading: false,
+    loadError: '',
+    networkOffline: false,
     summary: {
       total: 0,
       active: 0,
@@ -25,7 +27,12 @@ Page({
   },
 
   async loadSummary() {
-    this.setData({ isLoading: true });
+    const offline = !!wx.getStorageSync('network_offline') && !wx.getStorageSync('token');
+    this.setData({ isLoading: true, loadError: '', networkOffline: offline });
+    if (offline) {
+      this.setData({ isLoading: false, loadError: '网络不可用，请检查网络后重试' });
+      return;
+    }
     try {
       const res = await request<{ data: ShareTokenSummary[] }>({
         url: API_ENDPOINTS.SHARE_LIST,
@@ -51,9 +58,11 @@ Page({
           access: tokens.reduce((sum, item) => sum + (item.access_count || 0), 0),
         },
         recentLinks: tokens.slice(0, 3),
+        loadError: '',
       });
     } catch (error) {
       console.error('Failed to load share center summary', error);
+      this.setData({ loadError: '分享数据加载失败，点此重试' });
     } finally {
       this.setData({ isLoading: false });
     }

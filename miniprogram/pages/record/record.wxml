@@ -1,4 +1,11 @@
 <view class="container">
+  <view class="offline-banner" wx:if="{{networkOffline}}">
+    <text>网络不可用，无法保存到云端。请检查网络后下拉重试登录。</text>
+    <button size="mini" bindtap="retryLogin">重新登录</button>
+  </view>
+
+  <view class="quota-banner" wx:if="{{quotaTip && !networkOffline}}">{{quotaTip}}</view>
+
   <view class="ocr-section">
     <view class="ocr-card" bindtap="onOCRScan">
       <view class="ocr-content">
@@ -105,7 +112,7 @@
     </view>
 
     <view class="btn-area">
-      <button class="save-btn" formType="submit">保存记录</button>
+      <button class="save-btn" formType="submit">{{editingId ? '保存修改' : '保存记录'}}</button>
     </view>
   </form>
 </view>

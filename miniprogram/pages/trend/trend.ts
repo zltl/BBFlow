@@ -28,6 +28,8 @@ Page({
     totalRecordCount: 0,
     tableData: [] as any[],  // Daily grouped table data
     insightsLoading: false,
+    insightsError: '',
+    historyError: '',
     insightsDays: 30,
     insights: [] as Array<{ title: string; message: string; level: string; tone?: string }>,
     insightSummary: {
@@ -168,7 +170,7 @@ Page({
   },
 
   async loadInsights() {
-    this.setData({ insightsLoading: true });
+    this.setData({ insightsLoading: true, insightsError: '' });
     try {
       const res = await request<any>({
         url: `${API_ENDPOINTS.INSIGHTS}?days=${this.data.insightsDays}`,
@@ -195,9 +197,11 @@ Page({
           morningAvgSys: Math.round(res.morning_avg_sys || 0),
           eveningAvgSys: Math.round(res.evening_avg_sys || 0),
         },
+        insightsError: '',
       });
     } catch (error) {
       console.error('Failed to load insights', error);
+      this.setData({ insightsError: '洞察加载失败' });
     } finally {
       this.setData({ insightsLoading: false });
     }
@@ -211,6 +215,10 @@ Page({
 
   goToMedications() {
     wx.navigateTo({ url: '/pages/medications/index' });
+  },
+
+  goToFullHistory() {
+    wx.navigateTo({ url: '/pages/history/history' });
   },
 
   onScrollToLeft() {
@@ -847,15 +855,18 @@ Page({
   // ========== History Section Methods ==========
 
   async loadHistoryRecords() {
-    const openid = wx.getStorageSync('openid');
-    if (!openid) return;
+    if (!wx.getStorageSync('token')) {
+      this.setData({ historyError: '请先登录后再查看记录', historyRecords: [] });
+      return;
+    }
 
-    this.setData({ isLoadingHistory: true });
+    this.setData({ isLoadingHistory: true, historyError: '' });
 
     try {
       const res = await request<{ data: any[] }>({
-        url: `/records?openid=${openid}`,
-        method: 'GET'
+        url: API_ENDPOINTS.RECORDS,
+        method: 'GET',
+        showError: false,
       });
 
       let records = res.data.map(item => {
@@ -898,9 +909,11 @@ Page({
       this._historyAllRecords = records;
       this._historyCurrentPage = 1;
       this.renderHistoryPage(1);
+      this.setData({ historyError: '' });
 
     } catch (err) {
       console.error('Failed to load history records', err);
+      this.setData({ historyError: '历史记录加载失败' });
     } finally {
       this.setData({ isLoadingHistory: false });
     }
@@ -1006,11 +1019,48 @@ Page({
 
   showDetail(e: WechatMiniprogram.TouchEvent) {
     const item = e.currentTarget.dataset.item;
-    wx.showModal({
-      title: '记录详情',
-      content: `时间: ${item.measuredAt}\n高压: ${item.systolic}\n低压: ${item.diastolic}\n心率: ${item.heartRate}\n标签: ${item.tags ? item.tags.join(', ') : '无'}\n备注: ${item.note || '无'}`,
-      showCancel: false
+    wx.showActionSheet({
+      itemList: ['查看详情', '编辑记录', '删除记录'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.showModal({
+            title: '记录详情',
+            content: `时间: ${item.measuredAt}\n高压: ${item.systolic}\n低压: ${item.diastolic}\n心率: ${item.heartRate}\n标签: ${item.tags ? item.tags.join(', ') : '无'}\n备注: ${item.note || '无'}`,
+            showCancel: false,
+          });
+        } else if (res.tapIndex === 1) {
+          wx.setStorageSync('pending_edit_record_id', item.id);
+          wx.switchTab({ url: '/pages/record/record' });
+        } else if (res.tapIndex === 2) {
+          this.deleteHistoryRecord(item.id);
+        }
+      },
     });
+  },
+
+  async deleteHistoryRecord(id: number) {
+    if (!id) return;
+    const confirm = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: '删除记录',
+        content: '确认删除这条血压记录吗？',
+        confirmColor: '#ff4d4f',
+        success: (res) => resolve(!!res.confirm),
+      });
+    });
+    if (!confirm) return;
+    try {
+      await request({
+        url: `${API_ENDPOINTS.RECORDS}/${id}`,
+        method: 'DELETE',
+      });
+      wx.showToast({ title: '已删除', icon: 'success' });
+      this.loadHistoryRecords();
+      this.loadDataAndDraw();
+      this.loadInsights();
+    } catch (error) {
+      console.error('Failed to delete record', error);
+    }
   },
 
   // View mode toggle methods

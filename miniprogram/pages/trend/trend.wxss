@@ -403,6 +403,37 @@ page {
   color: #333;
 }
 
+.loading-banner,
+.error-banner {
+  margin: 16rpx 30rpx 0;
+  padding: 16rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.loading-banner {
+  background: #f0f7ff;
+  color: #1890ff;
+}
+
+.error-banner {
+  background: #fff2f0;
+  color: #cf1322;
+}
+
+.empty-hint {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.all-records-btn {
+  margin-left: 8rpx;
+  color: #1890ff;
+}
+
 .filter-btn {
   font-size: 26rpx;
   color: #333;

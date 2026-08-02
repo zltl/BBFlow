@@ -30,6 +30,40 @@ page {
   color: #111827;
 }
 
+.status-banner {
+  margin: 0 0 20rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+}
+
+.status-banner.loading {
+  background: #f0f7ff;
+  color: #1890ff;
+}
+
+.status-banner.error {
+  background: #fff2f0;
+  color: #cf1322;
+}
+
+.reminder-card {
+  margin-bottom: 20rpx;
+  padding: 28rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.06);
+}
+
+.reminder-row-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #111827;
+}
+
 .hero-subtitle,
 .empty-desc,
 .med-meta,

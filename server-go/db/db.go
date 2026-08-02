@@ -436,6 +436,38 @@ func initTables() error {
 		slog.Info("default plans seeded")
 	}
 
+	// Reminder preference + dispatch log
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS reminder_prefs (
+			user_id TEXT PRIMARY KEY REFERENCES users(openid),
+			med_reminders_enabled BOOLEAN DEFAULT FALSE,
+			measure_reminders_enabled BOOLEAN DEFAULT FALSE,
+			measure_reminder_time TEXT DEFAULT '08:00',
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create reminder_prefs table: %w", err)
+	}
+
+	_, err = Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS reminder_dispatches (
+			id SERIAL PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			medication_id INTEGER,
+			reminder_type TEXT NOT NULL,
+			dispatch_date DATE NOT NULL,
+			dispatch_minute TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(user_id, medication_id, reminder_type, dispatch_date, dispatch_minute)
+		);
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create reminder_dispatches table: %w", err)
+	}
+
+	_, _ = Pool.Exec(ctx, `ALTER TABLE bp_records ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`)
+
 	slog.Info("all tables initialized")
 	return nil
 }

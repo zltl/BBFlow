@@ -39,6 +39,23 @@ page {
   color: #64748b;
 }
 
+.status-banner {
+  margin-bottom: 20rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+}
+
+.status-banner.loading {
+  background: #f0f7ff;
+  color: #1890ff;
+}
+
+.status-banner.error {
+  background: #fff2f0;
+  color: #cf1322;
+}
+
 .action-grid,
 .stats-grid {
   margin-top: 24rpx;

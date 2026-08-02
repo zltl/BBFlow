@@ -11,6 +11,30 @@ page {
   padding-bottom: 160rpx; /* Space for bottom button */
 }
 
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+  padding: 20rpx 24rpx;
+  background: #fff7e6;
+  border-radius: 16rpx;
+  color: #d48806;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.quota-banner {
+  margin-bottom: 20rpx;
+  padding: 16rpx 22rpx;
+  background: #f0f7ff;
+  border-radius: 16rpx;
+  color: #1677ff;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
 /* OCR Section */
 .ocr-section {
   margin-bottom: 20rpx; /* Reduced from 30rpx to fit the link closer */

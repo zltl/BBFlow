@@ -90,10 +90,14 @@ LLM_MODEL=gpt-4o
 
 ### 支付与订阅
 - `GET /api/plans` - 获取套餐列表
-- `POST /api/payment/order` - 创建支付订单（支持 Idempotency-Key）🔒
+- `POST /api/payment/order` - 创建支付订单并返回 JSAPI 支付参数（支持 Idempotency-Key）🔒
+- `POST /api/payment/orders/:order_no/close` - 关闭待支付订单 🔒
 - `GET /api/payment/subscription` - 查询订阅状态 🔒
 - `GET /api/payment/orders` - 订单历史 🔒
-- `POST /api/payment/callback` - 支付回调（WeChat Pay webhook）
+- `POST /api/payment/notify` - 微信支付 XML 回调（验签）
+- `POST /api/payment/callback` - 管理员手动确认支付（需 `X-Admin-Secret`）
+- `GET/PUT /api/reminders/prefs` - 用药/测量提醒偏好 🔒
+- `GET/PUT /api/records/:id` - 获取/更新单条血压记录 🔒
 
 ### 支持工单
 - `POST /api/tickets` - 创建工单 🔒

@@ -15,6 +15,9 @@
         <view class="range-chip {{insightsDays === 90 ? 'active' : ''}}" bindtap="onInsightsRangeChange" data-days="90">90 天</view>
       </view>
 
+      <view class="loading-banner" wx:if="{{insightsLoading}}">正在生成健康洞察...</view>
+      <view class="error-banner" wx:if="{{insightsError}}" bindtap="loadInsights">{{insightsError}}，点此重试</view>
+
       <view class="insight-summary-grid">
         <view class="insight-summary-card">
           <text class="insight-summary-value">{{insightSummary.recordCount}}</text>
@@ -135,13 +138,17 @@
               {{filterDate || '全部'}} <text class="arrow">▼</text>
             </view>
           </picker>
+          <view class="filter-btn all-records-btn" bindtap="goToFullHistory">全部</view>
         </view>
       </view>
 
-      <block wx:if="{{historyRecords.length === 0 && !isLoadingHistory}}">
+      <view class="error-banner" wx:if="{{historyError}}" bindtap="loadHistoryRecords">{{historyError}}，点此重试</view>
+
+      <block wx:if="{{historyRecords.length === 0 && !isLoadingHistory && !historyError}}">
         <view class="empty-state">
           <text class="empty-icon">📋</text>
           <text class="empty-text">暂无记录</text>
+          <text class="empty-hint">去「记录」页添加第一次血压测量</text>
         </view>
       </block>
 

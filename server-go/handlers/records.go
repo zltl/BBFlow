@@ -160,6 +160,90 @@ func CreateRecord(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": recordID, "message": "Record saved successfully"})
 }
 
+func GetRecord(c *gin.Context) {
+	openid := c.GetString("openid")
+	if openid == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var r BPRecord
+	err = db.Pool.QueryRow(context.Background(),
+		`SELECT id, user_id, systolic, diastolic, heart_rate, measured_at, COALESCE(tags, ''), COALESCE(note, ''), created_at
+		 FROM bp_records WHERE id = $1 AND user_id = $2`, id, openid).
+		Scan(&r.ID, &r.UserID, &r.Systolic, &r.Diastolic, &r.HeartRate, &r.MeasuredAt, &r.Tags, &r.Note, &r.CreatedAt)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": r})
+}
+
+func UpdateRecord(c *gin.Context) {
+	openid := c.GetString("openid")
+	if openid == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var req CreateRecordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing required fields"})
+		return
+	}
+	if req.Systolic < 60 || req.Systolic > 300 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "收缩压范围应在 60-300 mmHg"})
+		return
+	}
+	if req.Diastolic < 30 || req.Diastolic > 200 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "舒张压范围应在 30-200 mmHg"})
+		return
+	}
+	if req.Systolic <= req.Diastolic {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "收缩压应大于舒张压"})
+		return
+	}
+	if req.HeartRate != nil && (*req.HeartRate < 20 || *req.HeartRate > 300) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "心率范围应在 20-300 bpm"})
+		return
+	}
+
+	measuredAt := time.Now()
+	if req.MeasuredAt != nil {
+		if t, err := time.Parse(time.RFC3339, *req.MeasuredAt); err == nil {
+			measuredAt = t
+		}
+	}
+	tagsJSON, _ := json.Marshal(req.Tags)
+
+	result, err := db.Pool.Exec(context.Background(), `
+UPDATE bp_records
+SET systolic = $1, diastolic = $2, heart_rate = $3, measured_at = $4, tags = $5, note = $6, updated_at = NOW()
+WHERE id = $7 AND user_id = $8
+`, req.Systolic, req.Diastolic, req.HeartRate, measuredAt, string(tagsJSON), req.Note, id, openid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新失败"})
+		return
+	}
+	if result.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Record not found or permission denied"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"id": id, "message": "Record updated successfully"})
+}
+
 func DeleteRecord(c *gin.Context) {
 	openid := c.GetString("openid")
 	if openid == "" {

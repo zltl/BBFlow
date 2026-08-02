@@ -30,6 +30,12 @@ BBFlow 是一个面向高血压患者的健康管理平台，包含微信小程�
 - **邀请体系** - 激活码 + 邀请链接分发
 - **管理后台** - 用户搜索、数据分析、工单管理
 
+### 进行中 / 近期
+- **微信支付** - 统一下单与回调验签（需配置商户号）
+- **用药提醒** - 微信订阅消息 + 服务端调度
+- **记录编辑** - 支持修正已保存的血压记录
+- **分享 H5 报告** - 图表与关键指标摘要增强
+
 ### 工程能力
 - 结构化 JSON 日志 (`log/slog`)，请求级 Request ID 追踪
 - 单元测试覆盖 OCR 解析、限流中间件
@@ -86,7 +92,9 @@ npm run build
 | `JWT_SECRET` | JWT 签名密钥 |
 | `BAIDU_OCR_API_KEY` / `BAIDU_OCR_SECRET_KEY` | 百度 OCR 凭证 |
 | `ALIYUN_OSS_*` | 阿里云 OSS 凭证 |
-| `ADMIN_SECRET` | 管理员认证密钥 |
+| `ADMIN_SECRET` | 管理员认证密钥（手动支付回调等） |
+| `WX_MCH_ID` / `WX_MCH_API_KEY` / `WX_NOTIFY_URL` | 微信支付商户配置（JSAPI v2） |
+| `WX_SUBSCRIBE_MED_TEMPLATE_ID` | 用药提醒订阅消息模板 ID |
 | `LOG_LEVEL` | 日志级别 (debug/info/warn/error) |
 | `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | LLM 配置（预留） |
 

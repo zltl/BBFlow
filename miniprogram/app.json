@@ -29,19 +29,27 @@
     "list": [
       {
         "pagePath": "pages/record/record",
-        "text": "记录"
+        "text": "记录",
+        "iconPath": "assets/tab-record.png",
+        "selectedIconPath": "assets/tab-record-active.png"
       },
       {
         "pagePath": "pages/trend/trend",
-        "text": "趋势"
+        "text": "趋势",
+        "iconPath": "assets/tab-trend.png",
+        "selectedIconPath": "assets/tab-trend-active.png"
       },
       {
         "pagePath": "pages/share/share",
-        "text": "数据"
+        "text": "数据",
+        "iconPath": "assets/tab-data.png",
+        "selectedIconPath": "assets/tab-data-active.png"
       },
       {
         "pagePath": "pages/settings/settings",
-        "text": "设置"
+        "text": "设置",
+        "iconPath": "assets/tab-settings.png",
+        "selectedIconPath": "assets/tab-settings-active.png"
       }
     ]
   },

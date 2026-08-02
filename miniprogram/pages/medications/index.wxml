@@ -7,6 +7,26 @@
     <button class="primary-btn" size="mini" bindtap="showCreateForm">添加药物</button>
   </view>
 
+  <view class="status-banner loading" wx:if="{{isLoading}}">正在加载用药数据...</view>
+  <view class="status-banner error" wx:if="{{loadError}}" bindtap="loadData">{{loadError}}</view>
+
+  <view class="reminder-card">
+    <view class="section-title">提醒设置</view>
+    <view class="reminder-row-line">
+      <text>用药提醒</text>
+      <switch checked="{{medRemindersEnabled}}" bindchange="onMedReminderSwitch" color="#1677ff" />
+    </view>
+    <view class="reminder-row-line">
+      <text>测量提醒</text>
+      <switch checked="{{measureRemindersEnabled}}" bindchange="onMeasureReminderSwitch" color="#1677ff" />
+    </view>
+    <picker mode="time" value="{{measureReminderTime}}" bindchange="onMeasureReminderTimeChange" wx:if="{{measureRemindersEnabled}}">
+      <view class="picker">测量提醒时间：{{measureReminderTime}}</view>
+    </picker>
+    <view class="field-hint">开启前会请求微信订阅消息授权；需在微信公众平台配置模板 ID。</view>
+    <button class="primary-btn" size="mini" bindtap="requestSubscribeAuth">重新授权订阅消息</button>
+  </view>
+
   <view class="stats-grid">
     <view class="stat-card">
       <text class="stat-value">{{medications.length}}</text>

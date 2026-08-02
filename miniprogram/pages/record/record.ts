@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from '../../config';
 import { generateIdempotencyKey } from '../../utils/idempotency';
+import { isQuotaError, promptQuotaUpgrade } from '../../utils/quota';
 import { request } from '../../utils/request';
 import { uploadFile } from '../../utils/upload';
 
@@ -42,6 +43,49 @@ Page({
     bpIndex: [0, 0],
     hrRange: [] as number[],
     hrIndex: 0,
+    networkOffline: false,
+    quotaTip: '',
+    editingId: 0,
+  },
+
+  onShow() {
+    const offline = !!wx.getStorageSync('network_offline') && !wx.getStorageSync('token');
+    this.setData({ networkOffline: offline });
+    this.loadQuotaTip();
+    const pendingEdit = Number(wx.getStorageSync('pending_edit_record_id') || 0);
+    if (pendingEdit > 0) {
+      wx.removeStorageSync('pending_edit_record_id');
+      this.loadRecordForEdit(pendingEdit);
+    }
+  },
+
+  async loadQuotaTip() {
+    if (!wx.getStorageSync('token')) return;
+    try {
+      const res: any = await request({ url: API_ENDPOINTS.USER_INFO, method: 'GET', showError: false });
+      const ocrLeft = Math.max(0, (res.ocr_quota || 0) - (res.ocr_used || 0));
+      const dataLeft = Math.max(0, (res.data_quota || 0) - (res.data_used || 0));
+      const ocrPeriod = res.ocr_quota_period === 'daily' ? '今日' : '本月';
+      this.setData({
+        quotaTip: `${ocrPeriod} OCR 剩余 ${ocrLeft}/${res.ocr_quota || 0}，今日记录剩余 ${dataLeft}/${res.data_quota || 0}`,
+      });
+    } catch {
+      // ignore
+    }
+  },
+
+  retryLogin() {
+    const app = getApp<IAppOption>();
+    if (app && typeof app.doLogin === 'function') {
+      app.doLogin();
+    }
+    setTimeout(() => {
+      const offline = !!wx.getStorageSync('network_offline') && !wx.getStorageSync('token');
+      this.setData({ networkOffline: offline });
+      if (!offline) {
+        wx.showToast({ title: '已重新登录', icon: 'success' });
+      }
+    }, 1500);
   },
 
   onLoad(options: Record<string, string>) {
@@ -66,6 +110,45 @@ Page({
       date: `${year}-${month}-${day}`,
       time: `${hour}:${minute}`,
     });
+
+    const editId = Number(options?.editId || 0);
+    if (editId > 0) {
+      this.loadRecordForEdit(editId);
+    }
+  },
+
+  async loadRecordForEdit(id: number) {
+    try {
+      const res = await request<{ data: any }>({
+        url: `${API_ENDPOINTS.RECORDS}/${id}`,
+        method: 'GET',
+      });
+      const item = res.data;
+      if (!item) return;
+      const measured = new Date(item.measured_at);
+      const date = `${measured.getFullYear()}-${(measured.getMonth() + 1).toString().padStart(2, '0')}-${measured.getDate().toString().padStart(2, '0')}`;
+      const time = `${measured.getHours().toString().padStart(2, '0')}:${measured.getMinutes().toString().padStart(2, '0')}`;
+      let tags: string[] = [];
+      try {
+        tags = typeof item.tags === 'string' ? JSON.parse(item.tags || '[]') : (item.tags || []);
+      } catch {
+        tags = [];
+      }
+      const selectedTags: Record<string, boolean> = {};
+      tags.forEach((t) => { selectedTags[t] = true; });
+      this.updatePickersFromValues(item.systolic, item.diastolic, item.heart_rate || 75);
+      this.setData({
+        editingId: id,
+        date,
+        time,
+        note: item.note || '',
+        selectedTags,
+      });
+      wx.setNavigationBarTitle({ title: '编辑记录' });
+    } catch (error) {
+      console.error('Failed to load record for edit', error);
+      wx.showToast({ title: '加载记录失败', icon: 'none' });
+    }
   },
 
   initPickers() {
@@ -307,6 +390,11 @@ Page({
           }
         } catch (error) {
           console.error('OCR scan failed', error);
+          if (isQuotaError(error)) {
+            promptQuotaUpgrade((error as any)?.message || (error as any)?.data?.message);
+          } else {
+            wx.showToast({ title: '识别失败，请重试或手动输入', icon: 'none' });
+          }
         } finally {
           wx.hideLoading();
         }
@@ -329,29 +417,50 @@ Page({
       if (!verified) return;
     }
 
-    await request({
-      url: API_ENDPOINTS.RECORDS,
-      method: 'POST',
-      idempotencyKey: generateIdempotencyKey('record'),
-      data: {
-        systolic: sysVal,
-        diastolic: diaVal,
-        heartRate: hrVal,
-        measuredAt,
-        tags: Object.keys(this.data.selectedTags),
-        note: this.data.note,
-        ocrLogId: this.data.ocrLogId,
-      },
-    });
+    const payload = {
+      systolic: sysVal,
+      diastolic: diaVal,
+      heartRate: hrVal,
+      measuredAt,
+      tags: Object.keys(this.data.selectedTags),
+      note: this.data.note,
+      ocrLogId: this.data.ocrLogId,
+    };
+
+    try {
+      if (this.data.editingId) {
+        await request({
+          url: `${API_ENDPOINTS.RECORDS}/${this.data.editingId}`,
+          method: 'PUT',
+          data: payload,
+        });
+      } else {
+        await request({
+          url: API_ENDPOINTS.RECORDS,
+          method: 'POST',
+          idempotencyKey: generateIdempotencyKey('record'),
+          data: payload,
+        });
+      }
+    } catch (error) {
+      if (!this.data.editingId && isQuotaError(error)) {
+        promptQuotaUpgrade((error as any)?.message || (error as any)?.data?.error);
+      }
+      throw error;
+    }
 
     wx.showToast({
-      title: '记录成功',
+      title: this.data.editingId ? '已更新' : '记录成功',
       icon: 'success',
       duration: 1800,
     });
     this.clearOCRState();
     setTimeout(() => {
-      wx.switchTab({ url: '/pages/history/history' });
+      if (this.data.editingId) {
+        wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/trend/trend' }) });
+      } else {
+        wx.switchTab({ url: '/pages/trend/trend' });
+      }
     }, 1200);
   },
 

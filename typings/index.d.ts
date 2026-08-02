@@ -3,9 +3,11 @@
 interface IAppOption {
   globalData: {
     userInfo?: WechatMiniprogram.UserInfo,
+    networkOffline?: boolean,
   }
   userInfoReadyCallback?: WechatMiniprogram.GetUserInfoSuccessCallback,
   processPendingActions(): void,
+  doLogin(): void,
 }
 
 declare namespace WechatMiniprogram {

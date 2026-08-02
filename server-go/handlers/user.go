@@ -20,6 +20,8 @@ type UserInfoResponse struct {
 	MaxInviteLinks  int        `json:"max_invite_links"`
 	DataQuota       int        `json:"data_quota"`
 	OCRQuota        int        `json:"ocr_quota"`
+	DataUsed        int        `json:"data_used"`
+	OCRUsed         int        `json:"ocr_used"`
 	QuotaIsDaily    bool       `json:"quota_is_daily"`
 	DataQuotaPeriod string     `json:"data_quota_period"` // "daily", "monthly", "total"
 	OCRQuotaPeriod  string     `json:"ocr_quota_period"`  // "daily", "monthly", "total"
@@ -47,7 +49,6 @@ func GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	// Get paid status
 	status, err := getUserPaidStatus(ctx, openid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check paid status"})
@@ -64,7 +65,6 @@ func GetUserInfo(c *gin.Context) {
 		MaxInviteLinks: maxInviteLinks,
 	}
 
-	// Set quota info based on status
 	if isAdmin {
 		resp.DataQuota = AdminDailyDataQuota
 		resp.OCRQuota = AdminDailyOCRQuota
@@ -83,6 +83,19 @@ func GetUserInfo(c *gin.Context) {
 		resp.QuotaIsDaily = false
 		resp.DataQuotaPeriod = "daily"
 		resp.OCRQuotaPeriod = "monthly"
+	}
+
+	if _, used, limit, err := checkQuota(ctx, openid, "data"); err == nil {
+		resp.DataUsed = used
+		if limit > 0 {
+			resp.DataQuota = limit
+		}
+	}
+	if _, used, limit, err := checkQuota(ctx, openid, "ocr"); err == nil {
+		resp.OCRUsed = used
+		if limit > 0 {
+			resp.OCRQuota = limit
+		}
 	}
 
 	c.JSON(http.StatusOK, resp)

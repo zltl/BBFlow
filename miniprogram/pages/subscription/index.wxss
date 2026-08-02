@@ -110,3 +110,30 @@ page {
   padding-top: 20rpx;
   border-top: 1rpx solid #eef2f7;
 }
+
+.status-banner {
+  margin-bottom: 20rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+}
+
+.status-banner.loading {
+  background: #f0f7ff;
+  color: #1890ff;
+}
+
+.status-banner.error {
+  background: #fff2f0;
+  color: #cf1322;
+}
+
+.empty-hint {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+
+.close-btn {
+  margin-top: 12rpx;
+}

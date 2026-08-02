@@ -76,9 +76,9 @@ func getUserPaidStatus(ctx context.Context, openid string) (*UserPaidStatus, err
 }
 
 // checkQuota checks if user is within their quota limits.
-// Admin: daily limits (100 data, 30 OCR).
+// Admin: daily limits (100 data, 1000 OCR).
 // Paid/sponsored: daily limits (30 data, 60 OCR).
-// Free users: daily data (5/day), monthly OCR (10/month).
+// Free users: daily data (30/day), monthly OCR (5/month).
 // Returns (allowed, used, limit, error)
 func checkQuota(ctx context.Context, openid string, quotaType string) (bool, int, int, error) {
 	status, err := getUserPaidStatus(ctx, openid)

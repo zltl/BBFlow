@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"strconv"
 	"time"
@@ -199,12 +201,11 @@ func ViewShareData(c *gin.Context) {
 func ViewShareHTML(c *gin.Context) {
 	token := c.Param("token")
 
-	// Log access audit
 	db.Pool.Exec(context.Background(),
 		`INSERT INTO share_access_logs (token, accessor_ip, user_agent) VALUES ($1, $2, $3)`,
 		token, c.ClientIP(), c.Request.UserAgent())
 
-	owner, records, meta, err := getShareData(token, 1, 20)
+	owner, records, meta, err := getShareData(token, 1, 200)
 	if err != nil {
 		switch err.Error() {
 		case "invalid token":
@@ -223,20 +224,44 @@ func ViewShareHTML(c *gin.Context) {
 	if owner.Nickname != nil {
 		nickname = *owner.Nickname
 	}
+	nickname = html.EscapeString(nickname)
 
 	avatarURL := "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0iI2VlZSIvPjxwYXRoIGQ9Ik01MCA1MGMtMTIgMC0yMi0xMC0yMi0yMnMxMC0yMiAyMi0yMiAyMiAxMCAyMiAyMi0xMCAyMi0yMiAyMnptMCAxMGMtMjAgMC00MCAxMC00MCAzMHYxMGg4MFY5MGMwLTIwLTIwLTMwLTQwLTMweiIgZmlsbD0iI2NjYyIvPjwvc3ZnPg=="
 	if owner.AvatarURL != nil && *owner.AvatarURL != "" {
-		avatarURL = *owner.AvatarURL
+		avatarURL = html.EscapeString(*owner.AvatarURL)
 	}
 
-	// Build records HTML
+	summary := computeShareSummary(records)
 	recordsHTML := buildRecordsHTML(records)
 	if len(records) == 0 {
 		recordsHTML = `<div class="empty">暂无符合条件的数据</div>`
 	}
 
-	// Simplified HTML template (same structure as Node.js version)
-	html := fmt.Sprintf(`<!DOCTYPE html>
+	// Chart series chronological
+	type chartPoint struct {
+		Label string `json:"label"`
+		Sys   int    `json:"sys"`
+		Dia   int    `json:"dia"`
+		HR    int    `json:"hr"`
+	}
+	points := make([]chartPoint, 0, len(records))
+	for i := len(records) - 1; i >= 0; i-- {
+		r := records[i]
+		hr := 0
+		if r.HeartRate != nil {
+			hr = *r.HeartRate
+		}
+		points = append(points, chartPoint{
+			Label: r.MeasuredAt.Format("01-02 15:04"),
+			Sys:   r.Systolic,
+			Dia:   r.Diastolic,
+			HR:    hr,
+		})
+	}
+	pointsJSON, _ := json.Marshal(points)
+	expiresAt := html.EscapeString(fmt.Sprint(meta["expiresAt"]))
+
+	page := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
@@ -245,11 +270,16 @@ func ViewShareHTML(c *gin.Context) {
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f5f5; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; }
-    .header { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .container { max-width: 640px; margin: 0 auto; }
+    .header { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     .avatar { width: 50px; height: 50px; border-radius: 50%%; background: #eee; object-fit: cover; }
     .info h1 { margin: 0; font-size: 18px; }
     .meta { font-size: 12px; color: #999; margin-top: 4px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .summary-card { background: #fff; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .summary-value { font-size: 22px; font-weight: 700; color: #1677ff; }
+    .summary-label { margin-top: 4px; font-size: 12px; color: #888; }
+    .disclaimer { background: #fffbe6; color: #ad6800; border-radius: 10px; padding: 10px 12px; font-size: 12px; margin-bottom: 16px; line-height: 1.5; }
     .date-group { margin-bottom: 20px; }
     .date-header { font-size: 14px; color: #666; margin-bottom: 10px; padding-left: 5px; }
     .record-card { background: #fff; border-radius: 12px; padding: 15px 20px; margin-bottom: 10px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -257,7 +287,7 @@ func ViewShareHTML(c *gin.Context) {
     .record-time { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 2px; }
     .record-period { font-size: 12px; color: #999; background: #f5f5f5; padding: 1px 6px; border-radius: 4px; display: inline-block; }
     .record-main { flex: 1; display: flex; justify-content: space-between; align-items: center; }
-    .bp-value { font-size: 28px; font-weight: bold; color: #333; font-family: "DIN Alternate", sans-serif; }
+    .bp-value { font-size: 28px; font-weight: bold; color: #333; }
     .record-right { display: flex; align-items: center; gap: 10px; }
     .bp-tag { font-size: 12px; padding: 2px 8px; border-radius: 10px; }
     .bp-tag.level3 { color: #cf1322; background: #fff1f0; }
@@ -265,27 +295,11 @@ func ViewShareHTML(c *gin.Context) {
     .bp-tag.level1 { color: #fa8c16; background: #fff7e6; }
     .bp-tag.normal-high { color: #faad14; background: #fffbe6; }
     .bp-tag.normal { color: #52c41a; background: #f6ffed; }
-    .hr-value { font-size: 16px; font-weight: bold; color: #333; display: flex; align-items: center; gap: 4px; }
-    .heart-icon { color: #ff4d4f; font-size: 12px; }
+    .hr-value { font-size: 16px; font-weight: bold; color: #333; }
     .empty { text-align: center; color: #999; padding: 40px; }
     .footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
-    .loading { text-align: center; padding: 20px; color: #999; display: none; }
     .chart-card { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .chart-title { font-size: 16px; font-weight: bold; color: #333; }
-    .chart-legend { display: flex; gap: 10px; font-size: 12px; color: #666; }
-    .legend-item { display: flex; align-items: center; gap: 4px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%%; }
-    .dot.high { background: #ff4d4f; }
-    .dot.low { background: #1890ff; }
-    .dot.hr { background: #52c41a; }
-    .chart-legend-group { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-    .chart-legend-zones { display: flex; gap: 8px; font-size: 10px; color: #999; }
-    .zone-item { display: flex; align-items: center; gap: 3px; }
-    .zone-box { width: 8px; height: 8px; border-radius: 2px; }
-    .zone-box.normal { background: rgba(82, 196, 26, 0.2); }
-    .zone-box.level1 { background: rgba(250, 173, 20, 0.2); }
-    .zone-box.level2 { background: rgba(255, 77, 79, 0.2); }
+    .chart-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -294,52 +308,97 @@ func ViewShareHTML(c *gin.Context) {
       <img class="avatar" src="%s" alt="Avatar">
       <div class="info">
         <h1>%s的血压记录</h1>
-        <div class="meta">有效期至: %s</div>
+        <div class="meta">有效期至: %s · 仅供健康管理参考，不构成医疗诊断</div>
       </div>
     </div>
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">血压趋势</div>
-        <div class="chart-legend-group">
-          <div class="chart-legend-zones">
-            <span class="zone-item"><span class="zone-box normal"></span>正常</span>
-            <span class="zone-item"><span class="zone-box level1"></span>一级</span>
-            <span class="zone-item"><span class="zone-box level2"></span>危险</span>
-          </div>
-          <div class="chart-legend">
-            <div class="legend-item"><span class="dot high"></span>收缩压</div>
-            <div class="legend-item"><span class="dot low"></span>舒张压</div>
-          </div>
-        </div>
-      </div>
-      <div id="chartBP" style="width: 100%%; height: 250px;"></div>
+    <div class="disclaimer">本页面数据由用户主动分享，健康洞察仅供参考，请遵医嘱。</div>
+    <div class="summary-grid">
+      <div class="summary-card"><div class="summary-value">%d</div><div class="summary-label">记录数</div></div>
+      <div class="summary-card"><div class="summary-value">%d/%d</div><div class="summary-label">平均血压</div></div>
+      <div class="summary-card"><div class="summary-value">%d%%</div><div class="summary-label">达标率(&lt;140/90)</div></div>
+      <div class="summary-card"><div class="summary-value">%d</div><div class="summary-label">异常次数</div></div>
     </div>
     <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">心率趋势</div>
-        <div class="chart-legend">
-          <div class="legend-item"><span class="dot hr"></span>心率</div>
-        </div>
-      </div>
+      <div class="chart-title">血压趋势</div>
+      <div id="chartBP" style="width: 100%%; height: 260px;"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">心率趋势</div>
       <div id="chartHR" style="width: 100%%; height: 200px;"></div>
     </div>
     <div class="list" id="recordList">%s</div>
-    <div class="loading" id="loading">加载中...</div>
-    <div class="footer">
-      <p>由「安压宝」提供技术支持</p>
-    </div>
+    <div class="footer"><p>由「安压宝」提供技术支持</p></div>
   </div>
   <script>
-    var token = "%s";
-    var hasMore = %t;
-    // Charts and lazy loading JS would go here (same as Node.js version)
+    var points = %s;
+    function renderCharts() {
+      if (!window.echarts || !points.length) return;
+      var labels = points.map(function(p){ return p.label; });
+      var sys = points.map(function(p){ return p.sys; });
+      var dia = points.map(function(p){ return p.dia; });
+      var hr = points.map(function(p){ return p.hr; });
+      var bpChart = echarts.init(document.getElementById('chartBP'));
+      bpChart.setOption({
+        grid: { left: 40, right: 16, top: 24, bottom: 40 },
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: labels, axisLabel: { rotate: 35, fontSize: 10 } },
+        yAxis: { type: 'value', min: 40, max: 220 },
+        series: [
+          { name: '收缩压', type: 'line', data: sys, smooth: true, itemStyle: { color: '#ff4d4f' } },
+          { name: '舒张压', type: 'line', data: dia, smooth: true, itemStyle: { color: '#1890ff' } }
+        ]
+      });
+      var hrChart = echarts.init(document.getElementById('chartHR'));
+      hrChart.setOption({
+        grid: { left: 40, right: 16, top: 24, bottom: 40 },
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: labels, axisLabel: { rotate: 35, fontSize: 10 } },
+        yAxis: { type: 'value', min: 40, max: 160 },
+        series: [{ name: '心率', type: 'line', data: hr, smooth: true, itemStyle: { color: '#52c41a' } }]
+      });
+      window.addEventListener('resize', function(){ bpChart.resize(); hrChart.resize(); });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderCharts);
+    } else { renderCharts(); }
   </script>
 </body>
 </html>`,
-		nickname, avatarURL, nickname, meta["expiresAt"], recordsHTML, token, meta["hasMore"].(bool))
+		nickname, avatarURL, nickname, expiresAt,
+		summary.Count, summary.AvgSys, summary.AvgDia, summary.NormalRate, summary.AbnormalCount,
+		recordsHTML, string(pointsJSON))
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, html)
+	c.String(http.StatusOK, page)
+}
+
+type shareSummary struct {
+	Count         int
+	AvgSys        int
+	AvgDia        int
+	NormalRate    int
+	AbnormalCount int
+}
+
+func computeShareSummary(records []ShareRecord) shareSummary {
+	s := shareSummary{Count: len(records)}
+	if len(records) == 0 {
+		return s
+	}
+	sumSys, sumDia, normal := 0, 0, 0
+	for _, r := range records {
+		sumSys += r.Systolic
+		sumDia += r.Diastolic
+		if r.Systolic < 140 && r.Diastolic < 90 {
+			normal++
+		} else {
+			s.AbnormalCount++
+		}
+	}
+	s.AvgSys = sumSys / len(records)
+	s.AvgDia = sumDia / len(records)
+	s.NormalRate = normal * 100 / len(records)
+	return s
 }
 
 func getBPLevel(sys, dia int) (string, string) {

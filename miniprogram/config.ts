@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   MEDICATIONS: `/medications`,
   MEDICATION_LOG: `/medications/log`,
   MEDICATION_ADHERENCE: `/medications/adherence`,
+  REMINDER_PREFS: `/reminders/prefs`,
   SHARE_GENERATE_TOKEN: `/share/generate-token`,
   SHARE_LIST: `/share/list`,
   SHARE_REVOKE_PREFIX: `/share/revoke`,

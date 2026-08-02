@@ -78,14 +78,108 @@ Page({
     medications: [] as MedicationItem[],
     adherence: [] as AdherenceItem[],
     averageAdherence: 0,
+    loadError: '',
+    medRemindersEnabled: false,
+    measureRemindersEnabled: false,
+    measureReminderTime: '08:00',
+    subscribeTemplateId: '',
   },
 
   onShow() {
     this.loadData();
+    this.loadReminderPrefs();
+  },
+
+  async loadReminderPrefs() {
+    try {
+      const res: any = await request({ url: API_ENDPOINTS.REMINDER_PREFS, method: 'GET', showError: false });
+      this.setData({
+        medRemindersEnabled: !!res.med_reminders_enabled,
+        measureRemindersEnabled: !!res.measure_reminders_enabled,
+        measureReminderTime: res.measure_reminder_time || '08:00',
+        subscribeTemplateId: res.template_id || '',
+      });
+    } catch {
+      // ignore
+    }
+  },
+
+  requestSubscribeAuth(): Promise<boolean> {
+    const templateId = this.data.subscribeTemplateId;
+    if (!templateId) {
+      wx.showToast({ title: '未配置提醒模板，请联系管理员', icon: 'none' });
+      return Promise.resolve(false);
+    }
+    return new Promise((resolve) => {
+      wx.requestSubscribeMessage({
+        tmplIds: [templateId],
+        success: (res) => {
+          const accepted = res[templateId] === 'accept';
+          if (!accepted) {
+            wx.showToast({ title: '未授权订阅，将无法推送提醒', icon: 'none' });
+          }
+          resolve(accepted);
+        },
+        fail: () => {
+          wx.showToast({ title: '订阅授权失败', icon: 'none' });
+          resolve(false);
+        },
+      });
+    });
+  },
+
+  async saveReminderPrefs(partial: Record<string, any>) {
+    try {
+      const res: any = await request({
+        url: API_ENDPOINTS.REMINDER_PREFS,
+        method: 'PUT',
+        data: partial,
+      });
+      this.setData({
+        medRemindersEnabled: !!res.med_reminders_enabled,
+        measureRemindersEnabled: !!res.measure_reminders_enabled,
+        measureReminderTime: res.measure_reminder_time || '08:00',
+        subscribeTemplateId: res.template_id || this.data.subscribeTemplateId,
+      });
+    } catch (error) {
+      console.error('Failed to save reminder prefs', error);
+    }
+  },
+
+  async onMedReminderSwitch(e: WechatMiniprogram.SwitchChange) {
+    const enabled = !!e.detail.value;
+    if (enabled) {
+      const ok = await this.requestSubscribeAuth();
+      if (!ok) {
+        this.setData({ medRemindersEnabled: false });
+        return;
+      }
+    }
+    this.setData({ medRemindersEnabled: enabled });
+    await this.saveReminderPrefs({ med_reminders_enabled: enabled });
+  },
+
+  async onMeasureReminderSwitch(e: WechatMiniprogram.SwitchChange) {
+    const enabled = !!e.detail.value;
+    if (enabled) {
+      const ok = await this.requestSubscribeAuth();
+      if (!ok) {
+        this.setData({ measureRemindersEnabled: false });
+        return;
+      }
+    }
+    this.setData({ measureRemindersEnabled: enabled });
+    await this.saveReminderPrefs({ measure_reminders_enabled: enabled });
+  },
+
+  async onMeasureReminderTimeChange(e: WechatMiniprogram.PickerChange) {
+    const measureReminderTime = e.detail.value as string;
+    this.setData({ measureReminderTime });
+    await this.saveReminderPrefs({ measure_reminder_time: measureReminderTime });
   },
 
   async loadData() {
-    this.setData({ isLoading: true });
+    this.setData({ isLoading: true, loadError: '' });
     try {
       const [medRes, adherenceRes] = await Promise.all([
         request<{ data: MedicationItem[] }>({ url: API_ENDPOINTS.MEDICATIONS, method: 'GET', showError: false }),
@@ -110,9 +204,11 @@ Page({
         }),
         adherence,
         averageAdherence,
+        loadError: '',
       });
     } catch (error) {
       console.error('Failed to load medications', error);
+      this.setData({ loadError: '用药数据加载失败，点此重试' });
     } finally {
       this.setData({ isLoading: false });
     }

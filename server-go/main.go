@@ -15,6 +15,7 @@ import (
 	"bbflow-server/handlers"
 	"bbflow-server/logging"
 	"bbflow-server/middleware"
+	"bbflow-server/reminder"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,6 +33,10 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
+	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
+	defer schedulerCancel()
+	reminder.StartScheduler(schedulerCtx)
 
 	// Setup Gin
 	r := gin.New()
@@ -72,7 +77,9 @@ func main() {
 		records.Use(middleware.AuthMiddleware())
 		{
 			records.GET("/", middleware.HistoryLimiter(), handlers.GetRecords)
+			records.GET("/:id", middleware.HistoryLimiter(), handlers.GetRecord)
 			records.POST("/", middleware.RecordLimiter(), middleware.Idempotency(), handlers.CreateRecord)
+			records.PUT("/:id", middleware.RecordLimiter(), handlers.UpdateRecord)
 			records.DELETE("/:id", middleware.RecordLimiter(), handlers.DeleteRecord)
 		}
 
@@ -109,6 +116,10 @@ func main() {
 			meds.GET("/adherence", handlers.GetMedicationAdherence)
 		}
 
+		// Reminder preferences (subscribe messages)
+		api.GET("/reminders/prefs", middleware.AuthMiddleware(), handlers.GetReminderPrefs)
+		api.PUT("/reminders/prefs", middleware.AuthMiddleware(), handlers.UpdateReminderPrefs)
+
 		// Data export & account management
 		api.GET("/export/json", middleware.AuthMiddleware(), handlers.ExportUserData)
 		api.GET("/export/csv", middleware.AuthMiddleware(), handlers.ExportUserDataCSV)
@@ -130,9 +141,12 @@ func main() {
 		payment.Use(middleware.AuthMiddleware())
 		{
 			payment.POST("/order", middleware.Idempotency(), handlers.CreateOrder)
+			payment.POST("/orders/:order_no/close", handlers.CloseOrder)
 			payment.GET("/subscription", handlers.GetSubscription)
 			payment.GET("/orders", handlers.ListOrders)
 		}
+		// WeChat Pay XML notify (signature verified); manual confirm requires X-Admin-Secret
+		api.POST("/payment/notify", handlers.PaymentNotify)
 		api.POST("/payment/callback", handlers.PaymentCallback)
 
 		// Invite routes (distribution system)

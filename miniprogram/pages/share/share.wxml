@@ -4,6 +4,9 @@
     <view class="hero-subtitle">集中处理分享、导出和会员相关操作，不再分散在多个入口里。</view>
   </view>
 
+  <view class="status-banner loading" wx:if="{{isLoading}}">正在加载分享概况...</view>
+  <view class="status-banner error" wx:if="{{loadError}}" bindtap="loadSummary">{{loadError}}</view>
+
   <view class="action-grid">
     <view class="action-card" bindtap="goToShareReport">
       <text class="action-icon">🖼️</text>
@@ -56,7 +59,7 @@
 
   <view class="card membership-card">
     <view class="section-title">会员与权益</view>
-    <view class="section-desc">查看套餐、订阅状态和订单历史；支付签名参数准备好后，这里会继续承接微信支付。</view>
+    <view class="section-desc">查看套餐、订阅状态和订单历史；支持微信支付开通会员权益。</view>
     <button class="primary-btn" bindtap="goToSubscription">打开会员中心</button>
   </view>
 </view>
